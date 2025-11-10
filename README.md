@@ -1,7 +1,7 @@
 # LOLCodeTerpreter
 ### Authors:
- Diana Kathlyn Cabrera
- Armie Casasola
+- Diana Kathlyn Cabrera
+- Armie Casasola
 
 | File | Description |
 | ----------- | ----------- |
