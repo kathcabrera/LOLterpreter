@@ -1,8 +1,7 @@
 # LOLCodeTerpreter
-## A LOLCode Interpreter using Python
 ### Authors:
-#### Diana Kathlyn Cabrera
-#### Armie Casasola
+ Diana Kathlyn Cabrera
+ Armie Casasola
 
 | File | Description |
 | ----------- | ----------- |
