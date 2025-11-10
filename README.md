@@ -1,4 +1,4 @@
-# LOLCodeTerpreter
+# LOLterpreter
 ### Authors:
 - Diana Kathlyn Cabrera
 - Armie Casasola
