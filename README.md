@@ -4,7 +4,7 @@
 - Armie Casasola
 
 Todo:
-- [x] Lexical Analyzer
+- [ ] Lexical Analyzer: Missing keywords
 - [ ] Syntax Analyzer
 - [ ] GUI
 
