@@ -1,5 +1,7 @@
 import tkinter as tk
 from PIL import Image
+from tkinter import filedialog
+import parser_try as parser
 
 
 # Source - https://stackoverflow.com/a
@@ -25,6 +27,28 @@ from PIL import Image
 #     image = image.resize(newsize, Image.ANTIALIAS)
 #     return image
 
+# select_file() and process_file() are taken from https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
+
+def select_file():
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+    if file_path:
+        file_label.config(text=f"{file_path}")
+        process_file(file_path)
+
+def process_file(file_path):
+    # Implement your file processing logic here
+    # For demonstration, let's just display the contents of the selected file
+    try:
+        with open(file_path, 'r') as file:
+            file_contents = file.read()
+            textbox.delete('1.0', tk.END)
+            textbox.insert(tk.END, file_contents)
+    except Exception as e:
+        file_label.config(text=f"Error: {str(e)}")
+
+def execute_code():
+    print("hello world")
+
 root = tk.Tk()
 
 # Window properties
@@ -37,22 +61,22 @@ left_frame = tk.Frame(root)
 
 file_frame = tk.Frame(left_frame)
 
-file = tk.Label(file_frame, width=35, text='(None selected)')
-file.grid(row=0, column=0)
+file_label = tk.Label(file_frame, width=35, text='(None selected)')
+file_label.grid(row=0, column=0)
 # folderIcon = Image.open("folder.png")
 # resized_folderIcon = folderIcon.resize((10,10), Image.Resampling.LANCZOS)
 # folderImage = folderIcon.subsample(3,3)
 # folderIcon.zoom(50,50)
 # fileButton = tk.Button(file_frame, text="File Select", image=resized_folderIcon, compound="left")
-fileButton = tk.Button(file_frame, text="File Select")
+fileButton = tk.Button(file_frame, text="File Select", command=select_file)
 fileButton.grid(row=0, column=1, padx=5)
 
 file_frame.pack(side=tk.TOP, anchor=tk.NW)
 
 textEditor_frame =  tk.Frame(left_frame)
-text = tk.Text(textEditor_frame, width=40, height=33)
-text.pack()
-executeButton = tk.Button(textEditor_frame, text="EXECUTE", width=45)
+textbox = tk.Text(textEditor_frame, width=40, height=33)
+textbox.pack()
+executeButton = tk.Button(textEditor_frame, text="EXECUTE", width=45, command=execute_code)
 executeButton.pack(pady=5)
 textEditor_frame.pack(side=tk.TOP, anchor=tk.NW)
 left_frame.grid(row=0, column=0, sticky=tk.W+tk.E)
@@ -83,5 +107,7 @@ outputText = tk.Text(right_frame, height=37, width=40)
 outputText.pack()
 
 right_frame.grid(row=0, column=2, sticky=tk.W+tk.E)
+
+
 
 root.mainloop()
