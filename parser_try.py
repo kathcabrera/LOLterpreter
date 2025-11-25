@@ -398,6 +398,8 @@ def analyze(source: str):
     print("#Tree view")
     pp_tree(ast)
 
+    return p
+
 #main
 if __name__ == "__main__":
     import sys, pathlib
