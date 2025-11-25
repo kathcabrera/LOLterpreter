@@ -1,8 +1,10 @@
 import tkinter as tk
 from PIL import Image
 from tkinter import filedialog
+import lol_lexer as lexer
 import parser_try as parser
 
+# Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
 # Source - https://stackoverflow.com/a
 # Posted by James Kent
@@ -27,33 +29,51 @@ import parser_try as parser
 #     image = image.resize(newsize, Image.ANTIALIAS)
 #     return image
 
-# select_file() and process_file() are taken from https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
+# taken from www.w3resource.com
 def select_file():
-    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.txt"), ("LOL files", "*.lol"), ("All files", "*.*")])
     if file_path:
         file_label.config(text=f"{file_path}")
         process_file(file_path)
 
+# taken from www.w3resource.com
 def process_file(file_path):
     # Implement your file processing logic here
     # For demonstration, let's just display the contents of the selected file
     try:
         with open(file_path, 'r') as file:
             file_contents = file.read()
-            textbox.delete('1.0', tk.END)
-            textbox.insert(tk.END, file_contents)
+            textEditor.delete('1.0', tk.END)
+            textEditor.insert(tk.END, file_contents)
     except Exception as e:
         file_label.config(text=f"Error: {str(e)}")
 
 def execute_code():
-    print("hello world")
+    # Lex
+    tokens = lexer.lex(textEditor.get("1.0", "end-1c"))
+    lexemes.delete(0, tk.END)
+    for token in tokens:
+        lexemes.insert(tk.END, f"{token.lexeme}    -    {token.kind}")
+    
+    # Parse
+    p = parser.Parser(tokens)
+    # ast = p.parse()
+    # for k, v in p.symbols.items():
+    #     # symbolTable_listbox.insert(tk.END, f"{k}: {v}")
+    #     print(f"{k}, {v}")
+    print(p.symbols)
+
+
+    # Print output in console
+    outputText.delete("1.0", tk.END)
+    # outputText.insert(tk.END, tokens)
 
 root = tk.Tk()
 
 # Window properties
 root.title("LOLterpreter")
-root.geometry("985x600+300+120")
+root.geometry("1000x600+300+120")
 root.config(bg="skyblue")
 
 # Left frame content
@@ -73,12 +93,12 @@ fileButton.grid(row=0, column=1, padx=5)
 
 file_frame.pack(side=tk.TOP, anchor=tk.NW)
 
-textEditor_frame =  tk.Frame(left_frame)
-textbox = tk.Text(textEditor_frame, width=40, height=33)
-textbox.pack()
-executeButton = tk.Button(textEditor_frame, text="EXECUTE", width=45, command=execute_code)
-executeButton.pack(pady=5)
-textEditor_frame.pack(side=tk.TOP, anchor=tk.NW)
+# textEditor_frame =  tk.Frame(left_frame)
+textEditor = tk.Text(left_frame, width=40, height=33)
+textEditor.pack()
+executeButton = tk.Button(left_frame, text="EXECUTE", width=45, command=execute_code)
+executeButton.pack(padx=5, pady=5)
+# textEditor_frame.pack(side=tk.TOP, anchor=tk.NW)
 left_frame.grid(row=0, column=0, sticky=tk.W+tk.E)
 
 
@@ -96,9 +116,9 @@ lexemes.pack()
 symbolTable_label = tk.Label(middle_frame, width=47, text="SYMBOL TABLE")
 symbolTable_label.pack()
 st_scrollbar = tk.Scrollbar(middle_frame)
-symbolTable = tk.Listbox(middle_frame, width=55, height=17, yscrollcommand=st_scrollbar.set)
-st_scrollbar.config(command=symbolTable.yview)
-symbolTable.pack()
+symbolTable_listbox = tk.Listbox(middle_frame, width=55, height=17, yscrollcommand=st_scrollbar.set)
+st_scrollbar.config(command=symbolTable_listbox.yview)
+symbolTable_listbox.pack()
 middle_frame.grid(row=0, column=1, sticky=tk.W+tk.E)
 
 # Right frame content
