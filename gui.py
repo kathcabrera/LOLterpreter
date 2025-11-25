@@ -57,12 +57,11 @@ def execute_code():
         lexemes.insert(tk.END, f"{token.lexeme}    -    {token.kind}")
     
     # Parse
-    p = parser.Parser(tokens)
-    # ast = p.parse()
-    # for k, v in p.symbols.items():
-    #     # symbolTable_listbox.insert(tk.END, f"{k}: {v}")
-    #     print(f"{k}, {v}")
-    print(p.symbols)
+    p = parser.analyze(textEditor.get("1.0", "end-1c"))
+    
+    symbolTable_listbox.delete(0, tk.END)
+    for k, v in p.symbols.items():
+        symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
 
 
     # Print output in console
