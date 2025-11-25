@@ -32,7 +32,7 @@ import parser_try as parser
 
 # taken from www.w3resource.com
 def select_file():
-    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.txt"), ("LOL files", "*.lol"), ("All files", "*.*")])
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("LOL files", "*.lol *.txt"), ("All files", "*.*")])
     if file_path:
         file_label.config(text=f"{file_path}")
         process_file(file_path)
