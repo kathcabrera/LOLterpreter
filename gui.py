@@ -51,22 +51,26 @@ def process_file(file_path):
 
 def execute_code():
     # Lex
-    tokens = lexer.lex(textEditor.get("1.0", "end-1c"))
+    tokens = parser.lex(textEditor.get("1.0", "end-1c"))
     lexemes.delete(0, tk.END)
     for token in tokens:
-        lexemes.insert(tk.END, f"{token.lexeme}    -    {token.kind}")
+        lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
     
     # Parse
-    p = parser.analyze(textEditor.get("1.0", "end-1c"))
+    p, ast = parser.analyze(textEditor.get("1.0", "end-1c"))
     
     symbolTable_listbox.delete(0, tk.END)
-    for k, v in p.symbols.items():
-        symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
+    if len(p.symbols) == 0:
+        print(f"{p.symbols}")
+        symbolTable_listbox.insert(tk.END, "None    -    None")
+    else:
+        for k, v in p.symbols.items():
+            symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
 
 
     # Print output in console
     outputText.delete("1.0", tk.END)
-    # outputText.insert(tk.END, tokens)
+    # outputText.insert(tk.END, str(parser.pp_tree(ast)))
 
 root = tk.Tk()
 
