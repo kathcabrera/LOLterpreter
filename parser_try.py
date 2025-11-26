@@ -250,7 +250,7 @@ class Parser:
                 self.symbols[ident] = val
                 items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
             else:
-                self.symbols.setdefault(ident, None)
+                self.symbols.setdefault(ident, "NOOB")
                 items.append(node("VARIABLE", ("Identifier", ident)))
             self.skip_nl()
         self.need("BUHBYE")
@@ -285,7 +285,7 @@ class Parser:
         return node("STATEMENT_LIST", *items)
 
     def print_stmt(self):
-        instruction = self.need("VISIBLE").lexeme
+        self.need("VISIBLE").lexeme
         
         val = self.eval_expr()
         while self.match("AN"):  
@@ -311,7 +311,7 @@ class Parser:
             s = self.need("YARN_LIT").lexeme
             return bytes(s[1:-1], "utf-8").decode("unicode_escape")
         if self.at("TROOF_LIT"):
-            return self.need("TROOF_LIT").lexeme == "WIN"
+            return self.need("TROOF_LIT").lexeme
 
         # identifier reference
         if self.at("IDENT"):
