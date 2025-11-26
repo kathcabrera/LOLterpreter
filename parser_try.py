@@ -398,7 +398,7 @@ def analyze(source: str):
     print("#Tree view")
     pp_tree(ast)
 
-    return p
+    return p, ast
 
 #main
 if __name__ == "__main__":
