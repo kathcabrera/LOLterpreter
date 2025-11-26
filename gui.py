@@ -3,6 +3,8 @@ from PIL import Image
 from tkinter import filedialog
 import lol_lexer as lexer
 import parser_try as parser
+# from dataclasses import dataclass
+from parser_try import ScanError, ParseError
 
 # Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
@@ -50,28 +52,52 @@ def process_file(file_path):
         file_label.config(text=f"Error: {str(e)}")
 
 def execute_code():
-    # Lex
-    tokens = parser.lex(textEditor.get("1.0", "end-1c"))
+    # clear GUI
     lexemes.delete(0, tk.END)
-    for token in tokens:
-        lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
-    
-    # Parse
-    p, ast = parser.analyze(textEditor.get("1.0", "end-1c"))
-    
+    outputText.delete("1.0", tk.END)
     symbolTable_listbox.delete(0, tk.END)
-    if len(p.symbols) == 0:
-        print(f"{p.symbols}")
-        symbolTable_listbox.insert(tk.END, "None    -    None")
+    
+    # Analyze; No need to call parser.analyze()
+    try:
+        tokens = parser.lex(textEditor.get("1.0", "end-1c"))        
+    except ScanError as e:
+        outputText.insert(tk.END, e)
+    except Exception as e:        
+        outputText.insert(tk.END, e)
     else:
-        for k, v in p.symbols.items():
-            symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
+        for token in tokens:
+            lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
+
+        try:
+            p = parser.Parser(tokens)
+            ast = p.parse()
+        except ParseError as e:
+            outputText.insert(tk.END, e)
+        except Exception as e:        
+            outputText.insert(tk.END, e)
+        else:
+            if len(p.symbols) == 0:
+                print(f"{p.symbols}")
+                symbolTable_listbox.insert(tk.END, "None    -    None")
+            else:
+                for k, v in p.symbols.items():
+                    symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
+
 
 
     # Print output in console
-    outputText.delete("1.0", tk.END)
+    # outputText.delete("1.0", tk.END)
     # outputText.insert(tk.END, str(parser.pp_tree(ast)))
 
+
+
+
+
+
+
+
+
+# ================================ GUI Widgets ================================
 root = tk.Tk()
 
 # Window properties
@@ -130,7 +156,6 @@ outputText = tk.Text(right_frame, height=37, width=40)
 outputText.pack()
 
 right_frame.grid(row=0, column=2, sticky=tk.W+tk.E)
-
 
 
 root.mainloop()
