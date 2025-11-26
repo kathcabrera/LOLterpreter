@@ -82,6 +82,11 @@ def execute_code():
             else:
                 for k, v in p.symbols.items():
                     symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
+            
+            for i in range(1,len(ast[2])):
+                if ast[2][i][0] == "PRINT":
+                    outputText.insert(tk.END, f"{ast[2][i][1]}\n")
+            # outputText.insert(tk.END, ast[2][1][0])
 
 
 

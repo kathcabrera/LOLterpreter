@@ -272,23 +272,26 @@ class Parser:
 
     # Statement list
     def statement_list_opt(self):
+        items = []
         while self.peek().type in ("VISIBLE", "IDENT"):
             if self.at("VISIBLE"):
-                self.print_stmt()
+                items.append(self.print_stmt())
             else:
                 # assignment
                 if self.peek(1).type != "R":
                     break
                 self.assign_stmt()
             self.skip_nl()
+        return node("STATEMENT_LIST", *items)
 
     def print_stmt(self):
-        self.need("VISIBLE")
+        instruction = self.need("VISIBLE").lexeme
         
-        self.eval_expr()
+        val = self.eval_expr()
         while self.match("AN"):  
             self.eval_expr()
-        return node("PRINT")
+        return node("PRINT", val)
+                # items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
 
     def assign_stmt(self):
         name = self.need("IDENT").lexeme
