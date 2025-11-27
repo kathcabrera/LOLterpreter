@@ -31,6 +31,74 @@ from parser_try import ScanError, ParseError
 #     image = image.resize(newsize, Image.ANTIALIAS)
 #     return image
 
+class MultiList:
+    def __init__(self, parent, title, name1, name2, side):
+        self.parent = parent
+        self.title = title
+        self.name1 = name1
+        self.name2 = name2
+        self.list1 = 0
+        self.list2 = 0
+        self.scrollbar = 0
+        self.side = side
+    
+    def clear(self):
+        self.list1.delete(0, tk.END)
+        self.list2.delete(0, tk.END)
+
+    def populate(self, iterable):
+        if len(iterable) == 0:
+            self.list1.insert(tk.END, "None")
+            self.list2.insert(tk.END, "None")
+            
+        
+        elif type(iterable) is dict:
+            for k, v in iterable.items():
+                self.list1.insert(tk.END, k)
+                self.list2.insert(tk.END, v)
+            
+                
+        elif isinstance(iterable[0], parser.Token):
+            for i in range(0, len(iterable)):
+                self.list1.insert(tk.END, iterable[i].lexeme)
+                self.list2.insert(tk.END, iterable[i].type)
+
+
+    def scroll_all(self, *args):
+        self.list1.yview(*args)
+        self.list2.yview(*args)
+    
+    def make(self):
+        main_frame = tk.Frame(self.parent)
+        sub_frame = tk.Frame(main_frame)
+        left_list = tk.Frame(sub_frame)
+        right_list = tk.Frame(sub_frame)
+
+        title = tk.Label(main_frame, text=self.title)
+        title.pack()
+
+        self.list1 = tk.Listbox(left_list, width=27, height=15)
+        name1 = tk.Label(left_list, text=self.name1)
+        self.list1.pack(side=tk.BOTTOM)
+        name1.pack(side=tk.TOP)
+
+
+        self.list2 = tk.Listbox(right_list, width=27, height=15)
+        name2 = tk.Label(right_list, text=self.name2)
+        self.list2.pack(side=tk.BOTTOM)
+        name2.pack(side=tk.TOP)
+
+        self.scrollbar = tk.Scrollbar(sub_frame)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.list1.config(yscrollcommand=self.scrollbar.set)
+        self.list2.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.scroll_all)
+
+        left_list.pack(side=tk.LEFT)
+        right_list.pack(side=tk.LEFT)
+        sub_frame.pack()
+        main_frame.pack(side=self.side, pady=6)
 
 # taken from www.w3resource.com
 def select_file():
@@ -53,9 +121,11 @@ def process_file(file_path):
 
 def execute_code():
     # clear GUI
-    lexemes.delete(0, tk.END)
+    # lexemes.delete(0, tk.END)
+    lexemes.clear()
+    symbol_table.clear()
     outputText.delete("1.0", tk.END)
-    symbolTable_listbox.delete(0, tk.END)
+    # symbolTable_listbox.delete(0, tk.END)
     
     # Analyze; No need to call parser.analyze()
     try:
@@ -65,8 +135,11 @@ def execute_code():
     except Exception as e:        
         outputText.insert(tk.END, e)
     else:
-        for token in tokens:
-            lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
+        # for token in tokens:
+            # lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
+
+        lexemes.populate(tokens)
+            # continue
 
         try:
             p = parser.Parser(tokens)
@@ -78,10 +151,13 @@ def execute_code():
         else:
             if len(p.symbols) == 0:
                 print(f"{p.symbols}")
-                symbolTable_listbox.insert(tk.END, "None    -    None")
+                # symbolTable_listbox.insert(tk.END, "None    -    None")
+                symbol_table.populate({"None": "None"})
             else:
-                for k, v in p.symbols.items():
-                    symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
+                # for k, v in p.symbols.items():
+                    # symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
+                symbol_table.populate(p.symbols)
+                    # continue
             
             for i in range(1,len(ast[2])):
                 if ast[2][i][0] == "PRINT":
@@ -94,20 +170,12 @@ def execute_code():
     # outputText.delete("1.0", tk.END)
     # outputText.insert(tk.END, str(parser.pp_tree(ast)))
 
-
-
-
-
-
-
-
-
 # ================================ GUI Widgets ================================
 root = tk.Tk()
 
 # Window properties
 root.title("LOLterpreter")
-root.geometry("1000x600+300+120")
+root.geometry("1080x600+300+120")
 root.config(bg="skyblue")
 
 # Left frame content
@@ -115,49 +183,36 @@ left_frame = tk.Frame(root)
 
 file_frame = tk.Frame(left_frame)
 
-file_label = tk.Label(file_frame, width=35, text='(None selected)')
+file_label = tk.Label(file_frame, width=48, text='(None selected)')
 file_label.grid(row=0, column=0)
-# folderIcon = Image.open("folder.png")
-# resized_folderIcon = folderIcon.resize((10,10), Image.Resampling.LANCZOS)
-# folderImage = folderIcon.subsample(3,3)
-# folderIcon.zoom(50,50)
-# fileButton = tk.Button(file_frame, text="File Select", image=resized_folderIcon, compound="left")
 fileButton = tk.Button(file_frame, text="File Select", command=select_file)
 fileButton.grid(row=0, column=1, padx=5)
 
 file_frame.pack(side=tk.TOP, anchor=tk.NW)
 
 # textEditor_frame =  tk.Frame(left_frame)
-textEditor = tk.Text(left_frame, width=40, height=33)
+textEditor = tk.Text(left_frame, width=50, height=33)
 textEditor.pack()
 executeButton = tk.Button(left_frame, text="EXECUTE", width=45, command=execute_code)
 executeButton.pack(padx=5, pady=5)
-# textEditor_frame.pack(side=tk.TOP, anchor=tk.NW)
+
 left_frame.grid(row=0, column=0, sticky=tk.W+tk.E)
 
 
 # Middle frame content
 middle_frame = tk.Frame(root)
 
-lexeme_label = tk.Label(middle_frame, width=47, text="LEXEMES")
-lexeme_label.pack()
+lexemes = MultiList(middle_frame, "LEXEMES", "Lexeme", "Classification", tk.TOP)
+lexemes.make()
 
-l_scrollbar = tk.Scrollbar(middle_frame)
-lexemes = tk.Listbox(middle_frame, width=55, height=17, yscrollcommand=l_scrollbar.set)
-l_scrollbar.config(command=lexemes.yview)
-lexemes.pack()
+symbol_table = MultiList(middle_frame, "SYMBOL TABLE", "Identifier", "Value", tk.BOTTOM)
+symbol_table.make()
 
-symbolTable_label = tk.Label(middle_frame, width=47, text="SYMBOL TABLE")
-symbolTable_label.pack()
-st_scrollbar = tk.Scrollbar(middle_frame)
-symbolTable_listbox = tk.Listbox(middle_frame, width=55, height=17, yscrollcommand=st_scrollbar.set)
-st_scrollbar.config(command=symbolTable_listbox.yview)
-symbolTable_listbox.pack()
 middle_frame.grid(row=0, column=1, sticky=tk.W+tk.E)
 
 # Right frame content
 right_frame = tk.Frame(root)
-outputText = tk.Text(right_frame, height=37, width=40)
+outputText = tk.Text(right_frame, height=37, width=39)
 outputText.pack()
 
 right_frame.grid(row=0, column=2, sticky=tk.W+tk.E)
