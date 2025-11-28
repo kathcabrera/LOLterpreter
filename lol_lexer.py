@@ -21,7 +21,7 @@ TYPE_RE   = r'\b(?:NOOB|NUMBR|NUMBAR|YARN|TROOF)\b' #type
 
 #Keywords
 KEYWORDS = [
-    r'HOW\s+IZ\s+I', r'IF\s+U\s+SAY\s+SO',
+    r'HOW\s+IZ\s+I', r'IF\s+U\s+SAY\s+SO', r'IM\s+IN\s+YR', r'IM\s+OUTTA\s+YR', 
     r'FOUND\s+YR', r'I\s+IZ', r'I\s+HAS\s+A', r'IS\s+NOW\s+A',
     r'SUM\s+OF', r'DIFF\s+OF', r'PRODUKT\s+OF', r'QUOSHUNT\s+OF', r'MOD\s+OF',
     r'BIGGR\s+OF', r'SMALLR\s+OF', r'BOTH\s+OF', r'EITHER\s+OF', r'WON\s+OF', r'NOT',
@@ -29,7 +29,7 @@ KEYWORDS = [
     r'O\s+RLY\?', r'YA\s+RLY', r'NO\s+WAI', r'WTF\?',r'AN',
     r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK', r'DIFFRINT', r'NOT',
     r'BTW', r'OBTW', r'TLDR', r'HAI', r'KTHXBYE', r'WAZZUP', r'BUHBYE',
-    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO'
+    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO', r'UPPIN', r'NERFIN', r'TIL', r'WILE', r'YR'
 ]
 #Long words are checked first
 KEYWORDS.sort(key=lambda s: len(s), reverse=True)
@@ -128,10 +128,11 @@ IF_ELSE_DELIMS = {'O RLY?', 'OIC'}
 
 def clean_lex(src):
     tokens = list(lex(src))
+    index = 0
 
     for t in tokens:
+        k = t.lexeme
         if t.type == 'KEYWORD':
-            k = t.lexeme
             if k == "HAI":
                 t.type = "CODE_START"
             elif k == "KTHXBYE":
@@ -190,6 +191,25 @@ def clean_lex(src):
                 t.type = "FUNC_RETURN_NOOB"
             elif k == "I IZ":
                 t.type = "FUNC_CALL"
+            elif k == "IM IN YR":
+                t.type = "FUNC_CALL"
+            elif k == "IM OUTTA YR":
+                t.type = "FUNC_CALL"
+            elif k == "TIL":
+                t.type = "FUNC_CALL"
+            elif k == "WILE":
+                t.type = "FUNC_CALL"
+            elif k == "YR":
+                t.type = "YR"
+            elif k == "UPPIN":
+                t.type = "INCREMENT_OP"
+            elif k == "NERFIN":
+                t.type = "DECREMENT_OP"
+
+
+
+        index += 1
+   
     return tokens;            
 
 

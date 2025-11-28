@@ -112,7 +112,6 @@ def execute_code():
         outputText.insert(tk.END, e)
     else:
         lexemes.populate(tokens)
-        print("done")
 
         # try:
         #     p = parser.Parser(tokens)
