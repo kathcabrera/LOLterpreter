@@ -5,7 +5,7 @@ from dataclasses import dataclass
 #one instance per lexeme
 @dataclass
 class Token:
-    kind: str #KEYWORD, IDENT, NUMBR, NUMBAR, YARN, TROOF, TYPE
+    type: str #KEYWORD, IDENT, NUMBR, NUMBAR, YARN, TROOF, TYPE
     lexeme: str #exact text
     line: int #line number of token first char
     col: int #col number of token first char
@@ -21,14 +21,15 @@ TYPE_RE   = r'\b(?:NOOB|NUMBR|NUMBAR|YARN|TROOF)\b' #type
 
 #Keywords
 KEYWORDS = [
+    r'HOW\s+IZ\s+I', r'IF\s+U\s+SAY\s+SO',
     r'FOUND\s+YR', r'I\s+IZ', r'I\s+HAS\s+A', r'IS\s+NOW\s+A',
     r'SUM\s+OF', r'DIFF\s+OF', r'PRODUKT\s+OF', r'QUOSHUNT\s+OF', r'MOD\s+OF',
-    r'BIGGR\s+OF', r'SMALLR\s+OF', r'BOTH\s+OF', r'EITHER\s+OF', r'WON\s+OF',
+    r'BIGGR\s+OF', r'SMALLR\s+OF', r'BOTH\s+OF', r'EITHER\s+OF', r'WON\s+OF', r'NOT',
     r'ANY\s+OF', r'ALL\s+OF', r'BOTH\s+SAEM',
     r'O\s+RLY\?', r'YA\s+RLY', r'NO\s+WAI', r'WTF\?',r'AN',
     r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK', r'DIFFRINT', r'NOT',
     r'BTW', r'OBTW', r'TLDR', r'HAI', r'KTHXBYE', r'WAZZUP', r'BUHBYE',
-    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY'
+    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO'
 ]
 #Long words are checked first
 KEYWORDS.sort(key=lambda s: len(s), reverse=True)
@@ -78,18 +79,18 @@ def lex(text: str):
     
     #iterates over every match of MATCH_RE
     for m in MASTER_RE.finditer(text):
-        kind = m.lastgroup #checks named group
+        type = m.lastgroup #checks named group
         lexeme = m.group() #checks the exact text that matched
 
-        if kind == 'NEWLINE':
+        if type == 'NEWLINE':
             line += 1
             col_start_of_line = m.end()
             continue
         #Whitespace and comments are ignored 
-        if kind in ('SKIP', 'LINE_COMMENT', 'BLOCK_COMMENT'):
+        if type in ('SKIP', 'LINE_COMMENT', 'BLOCK_COMMENT'):
             continue
         #if no match then error on token
-        if kind == 'MISMATCH':
+        if type == 'MISMATCH':
             # You can raise here; for milestone we’ll just report it
             c = m.start() - col_start_of_line + 1
             yield Token('ERROR', lexeme, line, c)
@@ -98,10 +99,10 @@ def lex(text: str):
         col = m.start() - col_start_of_line + 1
 
         #Normalize KEYWORD lexeme
-        if kind == 'KEYWORD':
+        if type == 'KEYWORD':
             lexeme = re.sub(r'\s+', ' ', lexeme)
         
-        if kind == 'YARN':
+        if type == 'YARN':
             inner = lexeme[1:-1]
             yield Token('STRING_QUOTE', '"', line, col)
             # Unescape display? The spec example shows raw inner; keep raw inner text
@@ -109,7 +110,8 @@ def lex(text: str):
             yield Token('STRING_QUOTE', '"', line, col + len(lexeme) - 1)
             continue
 
-        yield Token(kind, lexeme, line, col)
+        yield Token(type, lexeme, line, col)
+    
 
 #Category mapping for keywords to required labels
 CODE_DELIMS = {'HAI', 'KTHXBYE'}
@@ -120,57 +122,77 @@ OUTPUT_KEYWORDS = {'VISIBLE'}
 MULTI_PARAM_SEP = {'AN'}
 ARITH_OPS = {'SUM OF', 'DIFF OF', 'PRODUKT OF', 'QUOSHUNT OF', 'MOD OF'}
 COMP_OPS  = {'BIGGR OF', 'SMALLR OF', 'BOTH SAEM', 'DIFFRINT', 'EITHER OF', 'BOTH OF', 'WON OF', 'ALL OF', 'ANY OF'}
+TYPECAST_OPS = {"IS NOW A", "MAEK"}
+BOOL_OPS = {'BOTH OF', 'EITHER OF', 'WON OF', 'NOT', 'ALL OF', 'ANY OF'}
+IF_ELSE_DELIMS = {'O RLY?', 'OIC'}
 
-def print_labelled(tokens):
-     for t in tokens:
-        if t.kind == 'KEYWORD':
+def clean_lex(src):
+    tokens = list(lex(src))
+
+    for t in tokens:
+        if t.type == 'KEYWORD':
             k = t.lexeme
-            if k in CODE_DELIMS:
-                print(f"Code Delimiter {k} ")
-            elif k in VARLIST_DELIMS:
-                print(f"Variable List Delimiter {k} ")
-            elif k in VAR_DECL:
-                print(f"Variable Declaration {k} ")
-            elif k in ASSIGN_FOLLOWING_IHAS:
-                print(f"Variable Assignment (following I HAS A) {k} ")
-            elif k in OUTPUT_KEYWORDS:
-                print(f"Output Keyword {k} ")
-            elif k in MULTI_PARAM_SEP:
-                print(f"Multiple Parameter Separator {k} ")
+            if k == "HAI":
+                t.type = "CODE_START"
+            elif k == "KTHXBYE":
+                t.type = "CODE_END"
+            elif k == "WAZZUP":
+                t.type = "VARLIST_START"
+            elif k == "BUHBYE":
+                t.type = "VARLIST_END"
+            elif k == "I HAS A":
+                t.type = "VAR_DECL"
+            elif k == "ITZ":
+                t.type = "VAR_ASSIGN_ITZ"
+            elif k == "GIMMEH":
+                t.type = "INPUT_OP"
+            elif k == "VISIBLE":
+                t.type = "OUTPUT_OP"
+            elif k == "AN":
+                t.type = "MULTI_PARAM_SEP"
             elif k in ARITH_OPS:
-                print(f"Arithmetic Operator {k} ")
+                t.type = "ARITH_OP"
             elif k in COMP_OPS:
-                print(f"Comparison Operator {k} ")
-            else:
-                
-                print(f"Keyword {k} ")
+                t.type = "COMPARE_OP"
+            elif k == "+":
+                t.type = "CONCAT_OP"
+            elif k == "SMOOSH":
+                t.type = "STR_CONCAT_OP"
+            elif k == "R":
+                t.type = "VAR_ASSIGN_R"
+            elif k in TYPECAST_OPS:
+                t.type = "TYPECAST_OP"
+            elif k in BOOL_OPS:
+                t.type = "BOOLEAN_OP"
+            elif k == "MKAY":
+                t.type = "EXPRESSION_END"
+            elif k == "O RLY?":
+                t.type = "FLOW_IF"
+            elif k == "OIC":
+                t.type = "FLOW_END"
+            elif k == "YA RLY":
+                t.type = "IF_BLOCK"
+            elif k == "NO WAI":
+                t.type = "ELSE_BLOCK"
+            elif k == "WTF?":
+                t.type = "FLOW_SWITCH"
+            elif k == "OMG":
+                t.type = "CASE_OPTION"
+            elif k == "OMGWTF":
+                t.type = "CASE_DEFAULT"
+            elif k == "HOW IZ I":
+                t.type = "FUNC_START"
+            elif k == "IF U SAY SO":
+                t.type = "FUNC_END"
+            elif k == "FOUND YR":
+                t.type = "FUNC_RETURN_EXP"
+            elif k == "GTFO":
+                t.type = "FUNC_RETURN_NOOB"
+            elif k == "I IZ":
+                t.type = "FUNC_CALL"
+    return tokens;            
 
-        elif t.kind == 'IDENT':
-            print(f"Variable Identifier {t.lexeme} ")
 
-        elif t.kind == 'NUMBR':
-            print(f"Integer Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'NUMBAR':
-            print(f"Float Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'TROOF':
-            if t.lexeme == 'WIN':
-                print(f"Boolean Value (True) WIN WIN")
-            else:
-                print(f"Boolean Value (False) FAIL FAIL")
-
-        elif t.kind == 'TYPE':
-            print(f"Type Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'STRING_QUOTE':
-            print('String Delimiter " ')
-
-        elif t.kind == 'YARN_INNER':
-            print(f"String Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'ERROR':
-            print(f"LEXICAL ERROR {t.lexeme}")
 
 def main():
     #reads the file input
@@ -182,8 +204,10 @@ def main():
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         code = f.read()
 
-    tokens = list(lex(code))
-    print_labelled(tokens)
+    tokens = clean_lex(code)
+    
+    for token in tokens:
+        print(f"Token\n\ttype:{token.type}\n\tlexeme:{token.lexeme}\n")
 
 if __name__ == '__main__':
     main()

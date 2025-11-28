@@ -1,35 +1,13 @@
 import tkinter as tk
 from PIL import Image
 from tkinter import filedialog
-import lol_lexer as lexer
+import lexer
 import parser_try as parser
 # from dataclasses import dataclass
 from parser_try import ScanError, ParseError
 
 # Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
-# Source - https://stackoverflow.com/a
-# Posted by James Kent
-# Retrieved 2025-11-24, License - CC BY-SA 3.0
-
-# Source - https://stackoverflow.com/a
-# Posted by Universe Whole-Xuan, modified by community. See post 'Timeline' for change history
-# Retrieved 2025-11-24, License - CC BY-SA 4.0
-
-# from PIL import Image as pil
-# from pkg_resources import parse_version
-
-# if parse_version(pil.__version__)>=parse_version('10.0.0'):
-#     Image.ANTIALIAS=Image.LANCZOS
-
-
-# def Resize_Image(image, maxsize):
-#     r1 = image.size[0]/maxsize[0] # width ratio
-#     r2 = image.size[1]/maxsize[1] # height ratio
-#     ratio = max(r1, r2)
-#     newsize = (int(image.size[0]/ratio), int(image.size[1]/ratio))
-#     image = image.resize(newsize, Image.ANTIALIAS)
-#     return image
 
 class MultiList:
     def __init__(self, parent, title, name1, name2, side):
@@ -121,13 +99,11 @@ def process_file(file_path):
 
 def execute_code():
     # clear GUI
-    # lexemes.delete(0, tk.END)
     lexemes.clear()
     symbol_table.clear()
     outputText.delete("1.0", tk.END)
-    # symbolTable_listbox.delete(0, tk.END)
     
-    # Analyze; No need to call parser.analyze()
+    # Analyze
     try:
         tokens = parser.lex(textEditor.get("1.0", "end-1c"))        
     except ScanError as e:
@@ -135,11 +111,7 @@ def execute_code():
     except Exception as e:        
         outputText.insert(tk.END, e)
     else:
-        # for token in tokens:
-            # lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
-
         lexemes.populate(tokens)
-            # continue
 
         try:
             p = parser.Parser(tokens)
@@ -151,17 +123,14 @@ def execute_code():
         else:
             if len(p.symbols) == 0:
                 print(f"{p.symbols}")
-                # symbolTable_listbox.insert(tk.END, "None    -    None")
                 symbol_table.populate({"None": "None"})
             else:
-                # for k, v in p.symbols.items():
-                    # symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
                 symbol_table.populate(p.symbols)
-                    # continue
             
-            for i in range(1,len(ast[2])):
+            statement_list = ast[2]
+            for i in range(1,len(statement_list)):
                 if ast[2][i][0] == "PRINT":
-                    outputText.insert(tk.END, f"{ast[2][i][1]}\n")
+                    outputText.insert(tk.END, f"{statement_list[i][1]}\n")
             # outputText.insert(tk.END, ast[2][1][0])
 
 
