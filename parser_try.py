@@ -48,23 +48,24 @@ class Parser:
 
     # entry
     def parse(self):
-        self.skip_nl()
-        self.need("HAI")
-        self.need("NEWLINE")
-        self.skip_nl()
+        # self.skip_nl()
+        self.need("CODE_START")
+        # self.need("NEWLINE")
+        # self.skip_nl()
+        self.symbols["IT"] = "NOOB"
 
         wazzup_decls = None
-        if self.match("WAZZUP"):
-            self.skip_nl()
+        if self.match("VARLIST_START"):
+            # self.skip_nl()
             wazzup_decls = self.wazzup_block()             
 
         inline_decls = self.variable_declaration_list_opt() 
-        stmts        = self.statement_list_opt()            
+        # stmts        = self.statement_list_opt()            
 
-        self.skip_nl()
-        self.need("KTHXBYE")
-        self.skip_nl()
-        self.need("EOF")
+        # self.skip_nl()
+        self.need("CODE_END")
+        # self.skip_nl()
+        # self.need("EOF")
 
         # merge decl lists
         decls = None
@@ -75,16 +76,19 @@ class Parser:
 
         return node("PROGRAM",
                     decls,
-                    stmts if stmts else node("STATEMENT_LIST"))
+                    node("STATEMENT_LIST"))
+        # return node("PROGRAM",
+        #             decls,
+        #             stmts if stmts else node("STATEMENT_LIST"))
 
 
     #WAZZUP
     def wazzup_block(self):
         items = []
-        while self.peek().type == "I":
-            self.need("I"); self.need("HAS"); self.need("A")
+        while self.match("VAR_DECL"):
+            # self.need("I"); self.need("HAS"); self.need("A")
             ident = self.need("IDENT").lexeme
-            if self.match("ITZ"):
+            if self.match("VAR_ASSIGN_ITZ"):
                 val = self.eval_expr()
                 self.symbols[ident] = val
                 items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
@@ -92,8 +96,8 @@ class Parser:
                 self.symbols.setdefault(ident, "NOOB")
                 items.append(node("VARIABLE", ("Identifier", ident)))
             self.skip_nl()
-        self.need("BUHBYE")
-        self.skip_nl()
+        self.need("VARLIST_END")
+        # self.skip_nl()
         return node("VARIABLE_DECLARATION_LIST", *items)
 
 

@@ -80,7 +80,7 @@ class MultiList:
 
 # taken from www.w3resource.com
 def select_file():
-    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("LOL files", "*.lol *.txt"), ("All files", "*.*")])
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("LOL files", "*.lol"), ("All files", "*.*")])
     if file_path:
         file_label.config(text=f"{file_path}")
         process_file(file_path)
@@ -113,19 +113,19 @@ def execute_code():
     else:
         lexemes.populate(tokens)
 
-        # try:
-        #     p = parser.Parser(tokens)
-        #     ast = p.parse()
-        # except ParseError as e:
-        #     outputText.insert(tk.END, e)
-        # except Exception as e:        
-        #     outputText.insert(tk.END, e)
-        # else:
-        #     if len(p.symbols) == 0:
-        #         print(f"{p.symbols}")
-        #         symbol_table.populate({"None": "None"})
-        #     else:
-        #         symbol_table.populate(p.symbols)
+        try:
+            p = parser.Parser(tokens)
+            ast = p.parse()
+        except ParseError as e:
+            outputText.insert(tk.END, e)
+        except Exception as e:        
+            outputText.insert(tk.END, e)
+        else:
+            if len(p.symbols) == 0:
+                print(f"{p.symbols}")
+                symbol_table.populate({"None": "None"})
+            else:
+                symbol_table.populate(p.symbols)
             
         #     statement_list = ast[2]
         #     for i in range(1,len(statement_list)):

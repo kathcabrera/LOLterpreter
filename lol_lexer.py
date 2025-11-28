@@ -53,11 +53,11 @@ TOKEN_SPEC = [
     ('SKIP',           SKIP_WS_RE),
 
     #Literals
-    ('YARN',           YARN_RE),
-    ('NUMBAR',         NUMBAR_RE),
-    ('NUMBR',          NUMBR_RE),
-    ('TROOF',          TROOF_RE),
-    ('TYPE',           TYPE_RE),
+    ('YARN_LIT',           YARN_RE),
+    ('NUMBAR_LIT',         NUMBAR_RE),
+    ('NUMBR_LIT',          NUMBR_RE),
+    ('TROOF_LIT',          TROOF_RE),
+    ('TYPE_LIT',           TYPE_RE),
 
     #Keywords
     ('KEYWORD',        KEYWORD_ALT),
@@ -106,7 +106,7 @@ def lex(text: str):
             inner = lexeme[1:-1]
             yield Token('STRING_QUOTE', '"', line, col)
             # Unescape display? The spec example shows raw inner; keep raw inner text
-            yield Token('YARN_INNER', inner, line, col + 1)
+            yield Token('YARN_LIT', inner, line, col + 1)
             yield Token('STRING_QUOTE', '"', line, col + len(lexeme) - 1)
             continue
 
@@ -114,17 +114,37 @@ def lex(text: str):
     
 
 #Category mapping for keywords to required labels
-CODE_DELIMS = {'HAI', 'KTHXBYE'}
-VARLIST_DELIMS = {'WAZZUP', 'BUHBYE'}
-VAR_DECL = {'I HAS A'}
-ASSIGN_FOLLOWING_IHAS = {'ITZ'}
-OUTPUT_KEYWORDS = {'VISIBLE'}
-MULTI_PARAM_SEP = {'AN'}
-ARITH_OPS = {'SUM OF', 'DIFF OF', 'PRODUKT OF', 'QUOSHUNT OF', 'MOD OF'}
-COMP_OPS  = {'BIGGR OF', 'SMALLR OF', 'BOTH SAEM', 'DIFFRINT', 'EITHER OF', 'BOTH OF', 'WON OF', 'ALL OF', 'ANY OF'}
-TYPECAST_OPS = {"IS NOW A", "MAEK"}
-BOOL_OPS = {'BOTH OF', 'EITHER OF', 'WON OF', 'NOT', 'ALL OF', 'ANY OF'}
-IF_ELSE_DELIMS = {'O RLY?', 'OIC'}
+# CODE_DELIMS = {'HAI', 'KTHXBYE'}
+# VARLIST_DELIMS = {'WAZZUP', 'BUHBYE'}
+# VAR_DECL = {'I HAS A'}
+# ASSIGN_FOLLOWING_IHAS = {'ITZ'}
+# OUTPUT_KEYWORDS = {'VISIBLE'}
+# MULTI_PARAM_SEP = {'AN'}
+ARITH_OPS = {
+    'SUM OF': "SUM_OF", 
+    'DIFF OF': "DIFF_OF", 
+    'PRODUKT OF': "PRODUKT_OF", 
+    'QUOSHUNT OF': "QUOSHUNT_OF", 
+    'MOD OF': "MOD_OF"
+    }
+COMPARE_OPS  = {
+    'BIGGR OF': "BIGGR_OF",
+    'SMALLR OF': "SMALLR_OF",
+    'BOTH SAEM': "BOTH_SAEM",
+    'DIFFRINT': "DIFFRINT",
+    'EITHER OF': "EITHER_OF",
+    'BOTH OF': "BOTH_OF",
+    'WON OF': "WON_OF",
+    'NOT': "NOT",
+    'ALL OF': "ALL_OF",
+    'ANY OF': "ANY_OF"
+
+   }
+TYPECAST_OPS = {
+    "IS NOW A": "IS_NOW_A",
+    "MAEK": "MAEK"
+    }
+
 
 def clean_lex(src):
     tokens = list(lex(src))
@@ -150,11 +170,11 @@ def clean_lex(src):
             elif k == "VISIBLE":
                 t.type = "OUTPUT_OP"
             elif k == "AN":
-                t.type = "MULTI_PARAM_SEP"
+                t.type = "AN"
             elif k in ARITH_OPS:
-                t.type = "ARITH_OP"
-            elif k in COMP_OPS:
-                t.type = "COMPARE_OP"
+                t.type = ARITH_OPS[k]
+            elif k in COMPARE_OPS:
+                t.type = COMPARE_OPS[k]
             elif k == "+":
                 t.type = "CONCAT_OP"
             elif k == "SMOOSH":
@@ -162,9 +182,7 @@ def clean_lex(src):
             elif k == "R":
                 t.type = "VAR_ASSIGN_R"
             elif k in TYPECAST_OPS:
-                t.type = "TYPECAST_OP"
-            elif k in BOOL_OPS:
-                t.type = "BOOLEAN_OP"
+                t.type = TYPECAST_OPS[k]
             elif k == "MKAY":
                 t.type = "EXPRESSION_END"
             elif k == "O RLY?":
@@ -205,10 +223,6 @@ def clean_lex(src):
                 t.type = "INCREMENT_OP"
             elif k == "NERFIN":
                 t.type = "DECREMENT_OP"
-
-
-
-        index += 1
    
     return tokens;            
 
