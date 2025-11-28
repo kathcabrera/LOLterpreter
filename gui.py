@@ -1,7 +1,7 @@
 import tkinter as tk
 from PIL import Image
 from tkinter import filedialog
-import lexer
+import lol_lexer as lexer
 import parser_try as parser
 # from dataclasses import dataclass
 from parser_try import ScanError, ParseError
@@ -36,7 +36,7 @@ class MultiList:
                 self.list2.insert(tk.END, v)
             
                 
-        elif isinstance(iterable[0], parser.Token):
+        elif isinstance(iterable[0], lexer.Token):
             for i in range(0, len(iterable)):
                 self.list1.insert(tk.END, iterable[i].lexeme)
                 self.list2.insert(tk.END, iterable[i].type)
@@ -105,33 +105,34 @@ def execute_code():
     
     # Analyze
     try:
-        tokens = parser.lex(textEditor.get("1.0", "end-1c"))        
+        tokens = lexer.clean_lex(textEditor.get("1.0", "end-1c"))        
     except ScanError as e:
         outputText.insert(tk.END, e)
     except Exception as e:        
         outputText.insert(tk.END, e)
     else:
         lexemes.populate(tokens)
+        print("done")
 
-        try:
-            p = parser.Parser(tokens)
-            ast = p.parse()
-        except ParseError as e:
-            outputText.insert(tk.END, e)
-        except Exception as e:        
-            outputText.insert(tk.END, e)
-        else:
-            if len(p.symbols) == 0:
-                print(f"{p.symbols}")
-                symbol_table.populate({"None": "None"})
-            else:
-                symbol_table.populate(p.symbols)
+        # try:
+        #     p = parser.Parser(tokens)
+        #     ast = p.parse()
+        # except ParseError as e:
+        #     outputText.insert(tk.END, e)
+        # except Exception as e:        
+        #     outputText.insert(tk.END, e)
+        # else:
+        #     if len(p.symbols) == 0:
+        #         print(f"{p.symbols}")
+        #         symbol_table.populate({"None": "None"})
+        #     else:
+        #         symbol_table.populate(p.symbols)
             
-            statement_list = ast[2]
-            for i in range(1,len(statement_list)):
-                if ast[2][i][0] == "PRINT":
-                    outputText.insert(tk.END, f"{statement_list[i][1]}\n")
-            # outputText.insert(tk.END, ast[2][1][0])
+        #     statement_list = ast[2]
+        #     for i in range(1,len(statement_list)):
+        #         if ast[2][i][0] == "PRINT":
+        #             outputText.insert(tk.END, f"{statement_list[i][1]}\n")
+        #     # outputText.insert(tk.END, ast[2][1][0])
 
 
 
