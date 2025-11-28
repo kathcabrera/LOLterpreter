@@ -13,5 +13,7 @@ HAI
         I HAS A quo ITZ QUOSHUNT OF 4 AN 5
     BUHBYE
 
+    VISIBLE 12
+    monde
 
 KTHXBYE

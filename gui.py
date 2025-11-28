@@ -126,12 +126,12 @@ def execute_code():
                 symbol_table.populate({"None": "None"})
             else:
                 symbol_table.populate(p.symbols)
+                parser.pp_tree(ast)
             
         #     statement_list = ast[2]
         #     for i in range(1,len(statement_list)):
-        #         if ast[2][i][0] == "PRINT":
+        #         if statement_list[i][0] == "PRINT":
         #             outputText.insert(tk.END, f"{statement_list[i][1]}\n")
-        #     # outputText.insert(tk.END, ast[2][1][0])
 
 
 

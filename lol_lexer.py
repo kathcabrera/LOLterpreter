@@ -27,7 +27,7 @@ KEYWORDS = [
     r'BIGGR\s+OF', r'SMALLR\s+OF', r'BOTH\s+OF', r'EITHER\s+OF', r'WON\s+OF', r'NOT',
     r'ANY\s+OF', r'ALL\s+OF', r'BOTH\s+SAEM',
     r'O\s+RLY\?', r'YA\s+RLY', r'NO\s+WAI', r'WTF\?',r'AN',
-    r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK', r'DIFFRINT', r'NOT',
+    r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK\s+A', r'DIFFRINT', r'NOT',
     r'BTW', r'OBTW', r'TLDR', r'HAI', r'KTHXBYE', r'WAZZUP', r'BUHBYE',
     r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO', r'UPPIN', r'NERFIN', r'TIL', r'WILE', r'YR'
 ]
@@ -142,7 +142,7 @@ COMPARE_OPS  = {
    }
 TYPECAST_OPS = {
     "IS NOW A": "IS_NOW_A",
-    "MAEK": "MAEK"
+    "MAEK A": "MAEK_A"
     }
 
 
@@ -166,9 +166,9 @@ def clean_lex(src):
             elif k == "ITZ":
                 t.type = "VAR_ASSIGN_ITZ"
             elif k == "GIMMEH":
-                t.type = "INPUT_OP"
+                t.type = "GIMMEH"
             elif k == "VISIBLE":
-                t.type = "OUTPUT_OP"
+                t.type = "VISIBLE"
             elif k == "AN":
                 t.type = "AN"
             elif k in ARITH_OPS:
@@ -176,53 +176,53 @@ def clean_lex(src):
             elif k in COMPARE_OPS:
                 t.type = COMPARE_OPS[k]
             elif k == "+":
-                t.type = "CONCAT_OP"
+                t.type = "+"
             elif k == "SMOOSH":
-                t.type = "STR_CONCAT_OP"
+                t.type = "SMOOSH"
             elif k == "R":
-                t.type = "VAR_ASSIGN_R"
+                t.type = "R"
             elif k in TYPECAST_OPS:
                 t.type = TYPECAST_OPS[k]
             elif k == "MKAY":
-                t.type = "EXPRESSION_END"
+                t.type = "MKAY"
             elif k == "O RLY?":
-                t.type = "FLOW_IF"
+                t.type = "O_RLY?"
             elif k == "OIC":
-                t.type = "FLOW_END"
+                t.type = "OIC"
             elif k == "YA RLY":
-                t.type = "IF_BLOCK"
+                t.type = "YA_RLY"
             elif k == "NO WAI":
-                t.type = "ELSE_BLOCK"
+                t.type = "NO_WAI"
             elif k == "WTF?":
-                t.type = "FLOW_SWITCH"
+                t.type = "WTF?"
             elif k == "OMG":
-                t.type = "CASE_OPTION"
+                t.type = "OMG"
             elif k == "OMGWTF":
-                t.type = "CASE_DEFAULT"
+                t.type = "OMGWTF"
             elif k == "HOW IZ I":
-                t.type = "FUNC_START"
+                t.type = "HOW_IZ_I"
             elif k == "IF U SAY SO":
-                t.type = "FUNC_END"
+                t.type = "IF_U_SAY_SO"
             elif k == "FOUND YR":
-                t.type = "FUNC_RETURN_EXP"
+                t.type = "FOUND_YR"
             elif k == "GTFO":
-                t.type = "FUNC_RETURN_NOOB"
+                t.type = "GTFO"
             elif k == "I IZ":
-                t.type = "FUNC_CALL"
+                t.type = "I_IZ"
             elif k == "IM IN YR":
-                t.type = "FUNC_CALL"
+                t.type = "IM_IN_YR"
             elif k == "IM OUTTA YR":
-                t.type = "FUNC_CALL"
+                t.type = "IM_OUTTA_YR"
             elif k == "TIL":
-                t.type = "FUNC_CALL"
+                t.type = "TIL"
             elif k == "WILE":
-                t.type = "FUNC_CALL"
+                t.type = "WILE"
             elif k == "YR":
                 t.type = "YR"
             elif k == "UPPIN":
-                t.type = "INCREMENT_OP"
+                t.type = "UPPIN"
             elif k == "NERFIN":
-                t.type = "DECREMENT_OP"
+                t.type = "NERFIN"
    
     return tokens;            
 
