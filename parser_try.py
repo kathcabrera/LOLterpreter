@@ -120,9 +120,11 @@ class Parser:
     # Statement list
     def statement_list_opt(self):
         items = []
-        while self.peek().type in ("VISIBLE", "IDENT"):
+        while self.peek().type in ("VISIBLE", "IDENT", "GIMMEH"):
             if self.at("VISIBLE"):
                 items.append(self.print_stmt())
+            elif self.at("GIMMEH"):
+                items.append(self.input_stmt())
             else:
                 # assignment
                 if self.peek(1).type != "R":
@@ -131,8 +133,14 @@ class Parser:
             # self.skip_nl()
         return node("STATEMENT_LIST", *items)
 
+    def input_stmt(self):
+        self.need("GIMMEH")
+        val = self.need("IDENT").lexeme
+
+        return node("INPUT", val)
+
     def print_stmt(self):
-        self.need("VISIBLE").lexeme
+        self.need("VISIBLE")
         
         val = self.eval_expr()
         while self.match("AN"):  
@@ -162,8 +170,9 @@ class Parser:
 
         # identifier reference
         if self.at("IDENT"):
-            name = self.need("IDENT").lexeme
-            return self.symbols.get(name, None)
+            # name = self.need("IDENT").lexeme
+            # return self.symbols.get(name, None)
+            return node("Identifier", self.need("IDENT").lexeme)
 
         # arithmetic binary
         if self.at("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
