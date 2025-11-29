@@ -5,6 +5,8 @@ import lol_lexer as lexer
 import parser_try as parser
 # from dataclasses import dataclass
 from parser_try import ScanError, ParseError
+from tkinter import simpledialog
+import re
 
 # Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
@@ -100,7 +102,7 @@ def process_file(file_path):
 def execute_code():
     # clear GUI
     lexemes.clear()
-    symbol_table.clear()
+    symbols_listbox.clear()
     outputText.delete("1.0", tk.END)
     
     # Analyze
@@ -123,22 +125,49 @@ def execute_code():
         else:
             if len(p.symbols) == 0:
                 print(f"{p.symbols}")
-                symbol_table.populate({"None": "None"})
+                symbols_listbox.populate({"None": "None"})
             else:
-                symbol_table.populate(p.symbols)
+                symbols_listbox.populate(p.symbols)
                 parser.pp_tree(ast)
                 print("=======================================")
             
-        #     statement_list = ast[2]
-        #     for i in range(1,len(statement_list)):
-        #         if statement_list[i][0] == "PRINT":
-        #             outputText.insert(tk.END, f"{statement_list[i][1]}\n")
+            statement_list = ast[2]
+            symbolTable = p.symbols
+            # parser.pp_tuple(statement_list)
+
+            for i in range(1, len(statement_list)):
+                evaluate_node(statement_list[i], symbolTable)
+def eval():
+    return
 
 
+def check_type(symbols, identifier):
 
-    # Print output in console
-    # outputText.delete("1.0", tk.END)
-    # outputText.insert(tk.END, str(parser.pp_tree(ast)))
+    return
+
+def update_symboltable(symbols):
+    symbols_listbox.clear()
+    symbols_listbox.populate(symbols)
+    return
+
+def evaluate_node(node, symbols):
+    # parser.pp_tuple(node)
+    instruction = node[0]
+    children = []
+    for i in range(1, len(node)):
+        children.append(node[i])
+
+    if instruction == "INPUT":
+        if children[0] in symbols:
+            input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)
+            if re.search(lexer.NUMBAR_RE, input):
+                input = float(input)
+            elif re.search(lexer.NUMBR_RE, input):
+                input = int(input)
+            
+            symbols[children[0]] = input
+            update_symboltable(symbols)
+
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
@@ -175,8 +204,8 @@ middle_frame = tk.Frame(root)
 lexemes = MultiList(middle_frame, "LEXEMES", "Lexeme", "Classification", tk.TOP)
 lexemes.make()
 
-symbol_table = MultiList(middle_frame, "SYMBOL TABLE", "Identifier", "Value", tk.BOTTOM)
-symbol_table.make()
+symbols_listbox = MultiList(middle_frame, "SYMBOL TABLE", "Identifier", "Value", tk.BOTTOM)
+symbols_listbox.make()
 
 middle_frame.grid(row=0, column=1, sticky=tk.W+tk.E)
 

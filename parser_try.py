@@ -46,7 +46,7 @@ class Parser:
     def skip_nl(self):
         while self.match("NEWLINE"): pass
 
-    # entry
+    # Since we're using the old lexer, we don't need to parse for new lines
     def parse(self):
         # self.skip_nl()
         self.need("CODE_START")
@@ -128,10 +128,6 @@ class Parser:
             elif self.at("SMOOSH"):
                 items.append(self.concat_stmt())
             else:
-                # assignment
-                # if self.peek(1).type != "R":
-                #     break
-                # items.append(self.assign_stmt())
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())
                 
@@ -234,14 +230,6 @@ class Parser:
 
         # concatenation
         if self.at("SMOOSH"):
-            # self.i += 1
-            # parts = [str(self.eval_expr())]
-            # while self.match("AN"): parts.append(str(self.eval_expr()))
-            # self.need("MKAY"); return "".join(parts)
-            # parts = ()
-            # while self.match("AN"): parts.append(self.eval_expr())
-            # # self.need("MKAY")
-            # return node("SMOOSH", parts)
             n = self.concat_stmt()
             return n
 
@@ -266,8 +254,8 @@ class Parser:
             s = self.need("YARN_LIT").lexeme
             return bytes(s[1:-1], "utf-8").decode("unicode_escape")
         if self.at("TROOF_LIT"):
-            return self.need("TROOF_LIT").lexeme
-
+            troof = self.need("TROOF_LIT").lexeme
+            return "True" if troof == "WIN" else "False"
         # identifier reference
         if self.at("IDENT"):
             name = self.need("IDENT").lexeme
