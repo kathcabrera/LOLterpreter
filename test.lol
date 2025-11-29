@@ -8,7 +8,7 @@ HAI
         I HAS A flag ITZ WIN
     BUHBYE
     
-    BTW VISIBLE monde
-    BTW VISIBLE num + flag + 12 + "hello" + FAIL + 0.0
-    GIMMEH flag
+    VISIBLE monde
+    VISIBLE num + flag + 12 + "hello" + FAIL + 0.0
+    BTW GIMMEH flag
 KTHXBYE

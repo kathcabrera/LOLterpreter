@@ -99,6 +99,82 @@ def process_file(file_path):
     except Exception as e:
         file_label.config(text=f"Error: {str(e)}")
 
+def update_symboltable(symbols):
+    symbols_listbox.clear()
+    symbols_listbox.populate(symbols)
+    return
+
+def arith(op, a, b):
+    if op == "SUM_OF":      return (a or 0) + (b or 0)
+    if op == "DIFF_OF":     return (a or 0) - (b or 0)
+    if op == "PRODUKT_OF":  return (a or 0) * (b or 0)
+    if op == "QUOSHUNT_OF": return (a or 0) / (b or 1)
+    if op == "MOD_OF":      return (a or 0) % (b or 1)
+    if op == "BIGGR_OF":    return a if a >= b else b
+    if op == "SMALLR_OF":   return a if a <= b else b
+
+def bool(op, a, b):
+    if op == "BOTH_OF":   return bool(a) and bool(b)
+    if op == "EITHER_OF": return bool(a) or bool(b)
+    if op == "WON_OF":    return bool(a) ^ bool(b)
+
+def cast(v, t):
+    if t == "NUMBR": return int(v)
+    if t == "NUMBAR": return float(v)
+    if t == "YARN":  return "" if v is None else str(v)
+    if t == "TROOF": return bool(v)
+    return v
+
+# should be kinda same as in the parser's var_eval_expr()
+# untested
+def eval_expr(tup, symbols):
+    print(tup)
+    if tup[0] == "Identifier":
+        return symbols[tup[1]]
+    elif tup[0] in ("Integer", "Float", "String", "Boolean"):
+        return tup[1]
+    elif tup[0] == "CAST":
+        # looks like 
+        #    [0]       [1][0]       [1][1]       [2][0]         [2][1]
+        # ("CAST", (<Curren_Type>, <Value>), ("Target Type", <Target_Type))
+        if tup[1][0] in ("Integer", "Float", "String", "Boolean"):
+            return cast(tup[1][1], tup[2][1])
+        elif tup[1][0] == "Identifier":
+            return cast(symbols[tup[1][1]], tup[2][1])
+
+def evaluate_ast(node, symbols):
+    # parser.pp_tuple(node)
+    instruction = node[0]
+    children = []
+    for i in range(1, len(node)):
+        children.append(node[i])
+
+    if instruction == "INPUT":
+        if children[0] in symbols:  # children[0] is the variable name
+            input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)            
+            symbols[children[0]] = input
+            update_symboltable(symbols)
+        else:
+            # replace this with a raise Error() later
+            print(f"Variable identifier {children[0]} has not yet been declared")
+
+    elif instruction == "PERM_CAST":    # I HAS A explicit cast
+        ident = children[0][1]
+        type = children[1][1]
+        if ident in symbols:
+            symbols[ident] = cast(symbols[ident], type)
+            update_symboltable(symbols)
+        else:
+            # replace this with a raise Error() later
+            print(f"Variable identifier {children[0]} has not yet been declared")
+
+    # Untested
+    # elif instruction == "PRINT":
+    #     to_print = ""
+    #     for child in children:
+    #         to_print = to_print + str(eval_expr(child, symbols))
+    #     print(to_print)
+
 def execute_code():
     # clear GUI
     lexemes.clear()
@@ -128,46 +204,15 @@ def execute_code():
                 symbols_listbox.populate({"None": "None"})
             else:
                 symbols_listbox.populate(p.symbols)
-                parser.pp_tree(ast)
+                # parser.pp_tree(ast)
+                parser.pp_tuple(ast)
                 print("=======================================")
             
             statement_list = ast[2]
             symbolTable = p.symbols
-            # parser.pp_tuple(statement_list)
 
             for i in range(1, len(statement_list)):
-                evaluate_node(statement_list[i], symbolTable)
-def eval():
-    return
-
-
-def check_type(symbols, identifier):
-
-    return
-
-def update_symboltable(symbols):
-    symbols_listbox.clear()
-    symbols_listbox.populate(symbols)
-    return
-
-def evaluate_node(node, symbols):
-    # parser.pp_tuple(node)
-    instruction = node[0]
-    children = []
-    for i in range(1, len(node)):
-        children.append(node[i])
-
-    if instruction == "INPUT":
-        if children[0] in symbols:
-            input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)
-            if re.search(lexer.NUMBAR_RE, input):
-                input = float(input)
-            elif re.search(lexer.NUMBR_RE, input):
-                input = int(input)
-            
-            symbols[children[0]] = input
-            update_symboltable(symbols)
-
+                evaluate_ast(statement_list[i], symbolTable)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
