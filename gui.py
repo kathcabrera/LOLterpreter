@@ -127,6 +127,7 @@ def execute_code():
             else:
                 symbol_table.populate(p.symbols)
                 parser.pp_tree(ast)
+                print("=======================================")
             
         #     statement_list = ast[2]
         #     for i in range(1,len(statement_list)):

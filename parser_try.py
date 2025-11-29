@@ -120,18 +120,41 @@ class Parser:
     # Statement list
     def statement_list_opt(self):
         items = []
-        while self.peek().type in ("VISIBLE", "IDENT", "GIMMEH"):
+        while self.peek().type in ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A"):
             if self.at("VISIBLE"):
                 items.append(self.print_stmt())
             elif self.at("GIMMEH"):
                 items.append(self.input_stmt())
+            elif self.at("SMOOSH"):
+                items.append(self.concat_stmt())
             else:
                 # assignment
-                if self.peek(1).type != "R":
+                # if self.peek(1).type != "R":
+                #     break
+                # items.append(self.assign_stmt())
+                if self.peek(1).type == "R":
+                    items.append(self.assign_stmt())
+                
+                elif self.peek(1).type in ("IS_NOW_A", "MAEK_A"):
+                    items.append(self.cast_stmt())
+                else:
                     break
-                items.append(self.assign_stmt())
             # self.skip_nl()
         return node("STATEMENT_LIST", *items)
+
+    def cast_stmt(self):
+        ident = self.need("IDENT").lexeme
+        self.need("IS_NOW_A")
+        type = self.need("TYPE_LIT").lexeme
+        return node("PERM_CAST", ("Identifier", ident), ("Target Type", type))
+
+    def concat_stmt(self):
+        self.need("SMOOSH")
+        vals = []
+        vals.append(self.eval_expr())
+        while self.match("AN"):
+            vals.append(self.eval_expr())
+        return node("CONCATENATE", *vals)
 
     def input_stmt(self):
         self.need("GIMMEH")
@@ -141,11 +164,13 @@ class Parser:
 
     def print_stmt(self):
         self.need("VISIBLE")
+
+        vals = []
         
-        val = self.eval_expr()
-        while self.match("AN"):  
-            self.eval_expr()
-        return node("PRINT", val)
+        vals.append(self.eval_expr())
+        while self.match("+", "AN"):  
+            vals.append(self.eval_expr())
+        return node("PRINT", *vals)
                 # items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
 
     def assign_stmt(self):
@@ -155,18 +180,18 @@ class Parser:
         # self.symbols[name] = val
         return node("ASSIGN", ("Identifier", name), ("Value", val))
 
-    #expressions
+    #  returns nodes for the AST, does not do actual computations
     def eval_expr(self):
         # literals
         if self.at("NUMBR_LIT"):
-            return int(self.need("NUMBR_LIT").lexeme)
+            return node("Integer", int(self.need("NUMBR_LIT").lexeme))
         if self.at("NUMBAR_LIT"):
-            return float(self.need("NUMBAR_LIT").lexeme)
+            return node("Float", float(self.need("NUMBAR_LIT").lexeme))
         if self.at("YARN_LIT"):
             s = self.need("YARN_LIT").lexeme
-            return bytes(s[1:-1], "utf-8").decode("unicode_escape")
+            return node("String", bytes(s[1:-1], "utf-8").decode("unicode_escape"))
         if self.at("TROOF_LIT"):
-            return self.need("TROOF_LIT").lexeme
+            return node("Boolean", self.need("TROOF_LIT").lexeme)
 
         # identifier reference
         if self.at("IDENT"):
@@ -179,24 +204,25 @@ class Parser:
             op = self.peek().type; self.i += 1
             a = self.eval_expr(); self.need("AN"); b = self.eval_expr()
             # return self._arith(op, a, b)
-            return node("ARITHMETIC OP", op, a, b)
+            return node(op, a, b)
 
         # boolean binary
         if self.at("BOTH_OF","EITHER_OF","WON_OF"):
             op = self.peek().type; self.i += 1
             a = self.eval_expr(); self.need("AN"); b = self.eval_expr()
             # return self._bool(op, a, b)
-            return node("BOOLEAN OP", op, a, b)
+            return node(op, a, b)
         if self.at("NOT"):
             # self.i += 1; return not self.eval_expr()
             self.i += 1; return node("NOT", self.eval_expr())
         
-        # if self.at("ALL_OF","ANY_OF"):
-        #     op = self.peek().type; self.i += 1
-        #     vals = [self.eval_expr()]; self.need("AN"); vals.append(self.eval_expr())
-        #     while self.match("AN"): vals.append(self.eval_expr())
-        #     self.need("MKAY")
-        #     return all(vals) if op == "ALL_OF" else any(vals)
+        if self.at("ALL_OF","ANY_OF"):
+            op = self.peek().type; self.i += 1
+            vals = [self.eval_expr()]; self.need("AN"); vals.append(self.eval_expr())
+            while self.match("AN"): vals.append(self.eval_expr())
+            self.need("MKAY")
+            # return all(vals) if op == "ALL_OF" else any(vals)
+            return node(op, *vals)
 
         # comparison
         if self.at("BOTH_SAEM"):
@@ -208,25 +234,28 @@ class Parser:
 
         # concatenation
         if self.at("SMOOSH"):
-            self.i += 1
+            # self.i += 1
             # parts = [str(self.eval_expr())]
             # while self.match("AN"): parts.append(str(self.eval_expr()))
             # self.need("MKAY"); return "".join(parts)
-            parts = ()
-            while self.match("AN"): parts.append(self.eval_expr())
-            self.need("MKAY")
-            return node("SMOOSH", parts)
+            # parts = ()
+            # while self.match("AN"): parts.append(self.eval_expr())
+            # # self.need("MKAY")
+            # return node("SMOOSH", parts)
+            n = self.concat_stmt()
+            return n
 
         # cast
         if self.at("MAEK_A"):
             # self.i += 1; v = self.eval_expr(); self.need("A"); t = self.need("TYPE").lexeme
-            self.i += 1; v = self.eval_expr(); t = self.need("TYPE").lexeme
+            self.i += 1; v = self.eval_expr(); t = self.need("TYPE_LIT").lexeme
             # return self._cast(v, t)
-            return node("CAST", ("VALUE", v), ("TARGET_TYPE", t))
+            return node("CAST", v, ("Target Type", t))
 
         got = self.peek()
         raise ParseError(f"Unsupported expression at {got.line}:{got.col}: {got.lexeme!r}")
 
+    # for evaluating expressions in the WAZZUP block only, does actual computations
     def var_eval_expr(self):
         # literals
         if self.at("NUMBR_LIT"):
