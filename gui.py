@@ -217,6 +217,7 @@ def eval_expr(tup, symbols):
             result = result + eval_expr(tup[i], symbols)
         return result
 
+
 def evaluate_ast(node, symbols):
     # parser.pp_tuple(node)
     instruction = node[0]
@@ -235,6 +236,9 @@ def evaluate_ast(node, symbols):
         else:
             # replace this with a raise Error() later
             print(f"Variable identifier {children[0]} has not yet been declared")
+    elif instruction == "LOOP":
+        
+        pass
     elif instruction == "ASSIGN":
         # children looks like 
         #      [0][0]      [0][1]    [1][0]       [1][1]
@@ -242,7 +246,9 @@ def evaluate_ast(node, symbols):
         if children[0][1] in symbols:
             symbols[children[0][1]] = eval_expr(children[1][1], symbols)
             update_symboltable(symbols)
-        pass
+        else:
+            # replace this with a raise Error() later
+            print(f"Variable identifier {children[0]} has not yet been declared")
 
     elif instruction == "PERM_CAST":    # Explicit cast using I HAS A
         ident = children[0][1]

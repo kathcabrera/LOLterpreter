@@ -7,7 +7,7 @@ class ScanError(Exception): ...
 class ParseError(Exception): ...
 
 # Token types that will be encountered as the first token of the line
-INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH")
+INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR")
 
 #ast helpers
 def node(tag: str, *children: Any) -> Tuple[str, Any]:
@@ -133,6 +133,8 @@ class Parser:
                 items.append(node("ARITH_OPERATION", self.eval_expr()))
             elif self.at("BOTH_OF","EITHER_OF","WON_OF", "NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT"):
                 items.append(node("BOOL_OPERATION", self.eval_expr()))
+            elif self.at("IM_IN_YR"):
+                items.append(self.loop_stmt())
             else:
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())
@@ -143,6 +145,46 @@ class Parser:
                     break
             # self.skip_nl()
         return node("STATEMENT_LIST", *items)
+
+    def loop_stmt(self):
+        self.need("IM_IN_YR")
+        name = self.need("IDENT").lexeme
+
+        incr_decr = self.need("UPPIN", "NERFIN").lexeme
+        self.need("YR")
+        var = self.eval_expr()
+        loop_type = self.need("TIL", "WILE").lexeme
+        condition = self.eval_expr()
+
+        items = []
+        while self.peek().type in INLINE_TYPES:
+            if self.at("VISIBLE"):
+                items.append(self.print_stmt())
+            elif self.at("GIMMEH"):
+                items.append(self.input_stmt())
+            elif self.at("SMOOSH"):
+                items.append(self.concat_stmt())
+            elif self.at("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
+                items.append(node("ARITH_OPERATION", self.eval_expr()))
+            elif self.at("BOTH_OF","EITHER_OF","WON_OF", "NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT"):
+                items.append(node("BOOL_OPERATION", self.eval_expr()))
+            elif self.at("IM_IN_YR"):
+                items.append(self.loop_stmt())
+            else:
+                if self.peek(1).type == "R":
+                    items.append(self.assign_stmt())
+                
+                elif self.peek(1).type in ("IS_NOW_A", "MAEK_A"):
+                    items.append(self.cast_stmt())
+                else:
+                    break
+
+        self.need("IM_OUTTA_YR")
+        out_name = self.need("IDENT").lexeme
+        if name != out_name:
+            raise ParseError(f"Expected token {name}, got {out_name}")
+        
+        return node("LOOP", ("Name", name), (incr_decr, var), (loop_type, condition), ("CODE_BLOCK", *items))
 
     def cast_stmt(self):
         ident = self.need("IDENT").lexeme
