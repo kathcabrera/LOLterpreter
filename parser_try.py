@@ -7,7 +7,7 @@ class ScanError(Exception): ...
 class ParseError(Exception): ...
 
 # Token types that will be encountered as the first token of the line
-INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR")
+INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR", "HOW_IZ_I", "FOUND_YR", "GTFO", "I_IZ")
 
 #ast helpers
 def node(tag: str, *children: Any) -> Tuple[str, Any]:
@@ -135,6 +135,10 @@ class Parser:
                 items.append(node("BOOL_OPERATION", self.eval_expr()))
             elif self.at("IM_IN_YR"):
                 items.append(self.loop_stmt())
+            elif self.at("HOW_IZ_I"):
+                items.append(self.func_stmt())
+            elif self.at("I_IZ"):
+                items.append(self.call_stmt())
             else:
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())
@@ -146,16 +150,7 @@ class Parser:
             # self.skip_nl()
         return node("STATEMENT_LIST", *items)
 
-    def loop_stmt(self):
-        self.need("IM_IN_YR")
-        name = self.need("IDENT").lexeme
-
-        incr_decr = self.need("UPPIN", "NERFIN").lexeme
-        self.need("YR")
-        var = self.eval_expr()
-        loop_type = self.need("TIL", "WILE").lexeme
-        condition = self.eval_expr()
-
+    def eval_codeblock(self):
         items = []
         while self.peek().type in INLINE_TYPES:
             if self.at("VISIBLE"):
@@ -170,6 +165,16 @@ class Parser:
                 items.append(node("BOOL_OPERATION", self.eval_expr()))
             elif self.at("IM_IN_YR"):
                 items.append(self.loop_stmt())
+            
+            # for functions
+            elif self.at("FOUND_YR"):
+                items.append(self.return_stmt())
+            elif self.at("GTFO"):
+                items.append(node("BREAK"))
+                self.need("GTFO")
+            elif self.at("HOW_IZ_I"):
+                items.append(self.call_stmt)
+
             else:
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())
@@ -178,6 +183,36 @@ class Parser:
                     items.append(self.cast_stmt())
                 else:
                     break
+        return items
+
+    def eval_parameter(self, acc: list):
+        self.need("YR")
+        acc.append(self.eval_expr())
+        if self.at("AN"):
+            self.need("AN")
+            self.eval_parameter(acc)
+
+    def call_stmt(self):
+        self.need("I_IZ")
+        func_name = self.eval_expr()
+        args = []
+
+        if self.at("YR"):
+            self.eval_parameter(args)
+
+        return node("CALL", func_name, ("Arguments", *args))      
+
+    def loop_stmt(self):
+        self.need("IM_IN_YR")
+        name = self.need("IDENT").lexeme
+
+        incr_decr = self.need("UPPIN", "NERFIN").lexeme
+        self.need("YR")
+        var = self.eval_expr()
+        loop_type = self.need("TIL", "WILE").lexeme
+        condition = self.eval_expr()
+
+        items = self.eval_codeblock()
 
         self.need("IM_OUTTA_YR")
         out_name = self.need("IDENT").lexeme
@@ -185,6 +220,23 @@ class Parser:
             raise ParseError(f"Expected token {name}, got {out_name}")
         
         return node("LOOP", ("Name", name), (incr_decr, var), (loop_type, condition), ("CODE_BLOCK", *items))
+    
+    def func_stmt(self):
+        self.need("HOW_IZ_I")
+        name = self.need("IDENT").lexeme
+        
+        parameters = []
+        if self.at("YR"):
+            self.eval_parameter(parameters)
+        
+        items = self.eval_codeblock()
+
+        self.need("IF_U_SAY_SO")
+        return node("FUNCTION", ("Name", name), ("Parameters", *parameters), ("CODE_BLOCK", *items))
+
+    def return_stmt(self):
+        self.need("FOUND_YR")
+        return node("RETURN", self.eval_expr())
 
     def cast_stmt(self):
         ident = self.need("IDENT").lexeme
