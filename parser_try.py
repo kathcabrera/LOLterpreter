@@ -6,6 +6,8 @@ from typing import Any, List, Tuple
 class ScanError(Exception): ...
 class ParseError(Exception): ...
 
+# Token types that will be encountered as the first token of the line
+INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH")
 
 #ast helpers
 def node(tag: str, *children: Any) -> Tuple[str, Any]:
@@ -120,13 +122,17 @@ class Parser:
     # Statement list
     def statement_list_opt(self):
         items = []
-        while self.peek().type in ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A"):
+        while self.peek().type in INLINE_TYPES:
             if self.at("VISIBLE"):
                 items.append(self.print_stmt())
             elif self.at("GIMMEH"):
                 items.append(self.input_stmt())
             elif self.at("SMOOSH"):
                 items.append(self.concat_stmt())
+            elif self.at("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
+                items.append(node("ARITH_OPERATION", self.eval_expr()))
+            elif self.at("BOTH_OF","EITHER_OF","WON_OF", "NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT"):
+                items.append(node("BOOL_OPERATION", self.eval_expr()))
             else:
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())
