@@ -105,6 +105,23 @@ def update_symboltable(symbols):
     return
 
 def arith(op, a, b):
+    to_cast = a if isinstance(b, str) else b
+    if a == "WIN":
+        a = 1
+    elif a in ("FAIL", "NOOB"):
+        a = 0
+    if b == "WIN":
+        b = 1
+    elif b in ("FAIL", "NOOB"):
+        b = 0
+
+    if isinstance(to_cast, int) or (isinstance(a, str) and isinstance(b, str)):
+        a = int(a)
+        b = int(b)
+    elif isinstance(to_cast, float):
+        a = float(a)
+        b = float(b)
+
     if op == "SUM_OF":      return (a or 0) + (b or 0)
     if op == "DIFF_OF":     return (a or 0) - (b or 0)
     if op == "PRODUKT_OF":  return (a or 0) * (b or 0)
@@ -113,22 +130,24 @@ def arith(op, a, b):
     if op == "BIGGR_OF":    return a if a >= b else b
     if op == "SMALLR_OF":   return a if a <= b else b
 
-def bool(op, a, b):
+def bool_op(op, a, b):
     if op == "BOTH_OF":   return bool(a) and bool(b)
     if op == "EITHER_OF": return bool(a) or bool(b)
     if op == "WON_OF":    return bool(a) ^ bool(b)
 
 def cast(v, t):
-    if t == "NUMBR": return int(v)
-    if t == "NUMBAR": return float(v)
-    if t == "YARN":  return "" if v is None else str(v)
-    if t == "TROOF": return bool(v)
+
+
+    if t == "NUMBR": return 0 if v == "NOOB" else int(v)
+    if t == "NUMBAR": return 0.0 if v == "NOOB" else float(v)
+    if t == "YARN":  return "" if v == "NOOB" else str(v)
+    if t == "TROOF": return False if v == "NOOB" else bool(v)
     return v
 
 # should be kinda same as in the parser's var_eval_expr()
 # untested
 def eval_expr(tup, symbols):
-    print(tup)
+    # print(tup)
     if tup[0] == "Identifier":
         return symbols[tup[1]]
     if tup[0] in ("Integer", "Float", "String", "Boolean"):
@@ -144,7 +163,12 @@ def eval_expr(tup, symbols):
     if tup[0] in ("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
         return arith(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
     if tup[0] in ("BOTH_OF","EITHER_OF","WON_OF","BIGGR_OF","SMALLR_OF"):
-        return bool(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+        return bool_op(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+    if tup[0] == "CONCATENATE":
+        result = ""
+        for i in range(1, len(tup)):
+            result = result + eval_expr(tup[i], symbols)
+        return result
 
 def evaluate_ast(node, symbols):
     # parser.pp_tuple(node)
@@ -158,11 +182,20 @@ def evaluate_ast(node, symbols):
             input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)            
             symbols[children[0]] = input
             update_symboltable(symbols)
+            outputText.insert(tk.END, input+"\n")
         else:
             # replace this with a raise Error() later
             print(f"Variable identifier {children[0]} has not yet been declared")
+    elif instruction == "ASSIGN":
+        # children looks like 
+        #      [0][0]      [0][1]    [1][0]       [1][1]
+        # [("Identifier", <Value>), ("Value", <Expression>)]
+        if children[0][1] in symbols:
+            symbols[children[0][1]] = eval_expr(children[1][1], symbols)
+            update_symboltable(symbols)
+        pass
 
-    elif instruction == "PERM_CAST":    # I HAS A explicit cast
+    elif instruction == "PERM_CAST":    # Explicit cast using I HAS A
         ident = children[0][1]
         type = children[1][1]
         if ident in symbols:
@@ -171,13 +204,17 @@ def evaluate_ast(node, symbols):
         else:
             # replace this with a raise Error() later
             print(f"Variable identifier {children[0]} has not yet been declared")
-
-    # Untested
-    # elif instruction == "PRINT":
-    #     to_print = ""
-    #     for child in children:
-    #         to_print = to_print + str(eval_expr(child, symbols))
-    #     print(to_print)
+    
+    elif instruction in ("ARITH_OPERATION", "BOOL_OPERATION"):
+        result = eval_expr(children[0], symbols)
+        symbols["IT"] = result
+        update_symboltable(symbols)
+    
+    elif instruction == "PRINT":
+        to_print = ""
+        for child in children:
+            to_print = to_print + str(eval_expr(child, symbols))
+        outputText.insert(tk.END, to_print+"\n")
 
 def execute_code():
     # clear GUI
@@ -208,8 +245,8 @@ def execute_code():
                 symbols_listbox.populate({"None": "None"})
             else:
                 symbols_listbox.populate(p.symbols)
-                # parser.pp_tree(ast)
-                parser.pp_tuple(ast)
+                parser.pp_tree(ast)
+                # parser.pp_tuple(ast)
                 print("=======================================")
             
             statement_list = ast[2]
