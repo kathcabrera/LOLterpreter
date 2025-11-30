@@ -131,16 +131,20 @@ def eval_expr(tup, symbols):
     print(tup)
     if tup[0] == "Identifier":
         return symbols[tup[1]]
-    elif tup[0] in ("Integer", "Float", "String", "Boolean"):
+    if tup[0] in ("Integer", "Float", "String", "Boolean"):
         return tup[1]
-    elif tup[0] == "CAST":
+    if tup[0] == "CAST":
         # looks like 
         #    [0]       [1][0]       [1][1]       [2][0]         [2][1]
-        # ("CAST", (<Curren_Type>, <Value>), ("Target Type", <Target_Type))
-        if tup[1][0] in ("Integer", "Float", "String", "Boolean"):
-            return cast(tup[1][1], tup[2][1])
-        elif tup[1][0] == "Identifier":
-            return cast(symbols[tup[1][1]], tup[2][1])
+        # ("CAST", (<Current_Type>, <Value>), ("Target Type", <Target_Type))
+        # if tup[1][0] in ("Integer", "Float", "String", "Boolean"):
+        return cast(eval_expr(tup[1], symbols), tup[2][1])
+        # elif tup[1][0] == "Identifier":
+        #     return cast(symbols[tup[1][1]], tup[2][1])
+    if tup[0] in ("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
+        return arith(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+    if tup[0] in ("BOTH_OF","EITHER_OF","WON_OF","BIGGR_OF","SMALLR_OF"):
+        return bool(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
 
 def evaluate_ast(node, symbols):
     # parser.pp_tuple(node)
