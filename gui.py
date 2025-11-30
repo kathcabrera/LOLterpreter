@@ -4,7 +4,8 @@ from tkinter import filedialog
 import lol_lexer as lexer
 import parser_try as parser
 # from dataclasses import dataclass
-from parser_try import ScanError, ParseError
+from parser_try import ScanError
+from parser_try import ParseError
 from tkinter import simpledialog
 import re
 

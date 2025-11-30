@@ -14,7 +14,7 @@ Notable Changes:
 Todo:
 - [x] Lexical Analyzer
 - [x] GUI  
-Syntax Analyzer
+**Syntax Analyzer**
 - [x] User Input
 - [x] User Output
 - [x] Variables
@@ -24,12 +24,12 @@ Syntax Analyzer
 - [ ] Switch-Case
 - [ ] Loops
 - [ ] Functions  
-Semantic Analyzer
+**Semantic Analyzer**
 - [x] User Input
-- [ ] User Output
+- [x] User Output
 - [x] Variables
-- [ ] Operations
-- [ ] Typecasting
+- [x] Operations
+- [x] Typecasting
 - [ ] If-Else
 - [ ] Switch-Case
 - [ ] Loops

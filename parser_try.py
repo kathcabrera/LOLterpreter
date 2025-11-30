@@ -1,5 +1,5 @@
 import re
-from lexer import Token, lex
+from lol_lexer import Token, lex
 from dataclasses import dataclass
 from typing import Any, List, Tuple
 
