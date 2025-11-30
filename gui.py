@@ -10,7 +10,7 @@ import re
 
 # Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
-
+class RuntimeError(Exception): ...
 class MultiList:
     def __init__(self, parent, title, name1, name2, side):
         self.parent = parent
@@ -108,11 +108,11 @@ def arith(op, a, b):
     to_cast = a if isinstance(b, str) else b
     if a == "WIN":
         a = 1
-    elif a in ("FAIL", "NOOB"):
+    elif a in ("FAIL", "NOOB", ""):
         a = 0
     if b == "WIN":
         b = 1
-    elif b in ("FAIL", "NOOB"):
+    elif b in ("FAIL", "NOOB", ""):
         b = 0
 
     if isinstance(to_cast, int) or (isinstance(a, str) and isinstance(b, str)):
@@ -131,18 +131,38 @@ def arith(op, a, b):
     if op == "SMALLR_OF":   return a if a <= b else b
 
 def bool_op(op, a, b):
+    if isinstance(a, str):
+        a = 0 if a == "" or a == "NOOB" or a == "FAIL" else 1
+    if isinstance(b, str):
+        b = 0 if b == "" or b == "NOOB" or b == "FAIL" else 1
+
     if op == "BOTH_OF":   return bool(a) and bool(b)
     if op == "EITHER_OF": return bool(a) or bool(b)
     if op == "WON_OF":    return bool(a) ^ bool(b)
+    if op == "NOT":       return not bool(a)
+
+def compare(op, a, b):
+    if op == "BOTH_SAEM":    return a == b
+    if op == "DIFFRINT":    return a != b
 
 def cast(v, t):
-
-
     if t == "NUMBR": return 0 if v == "NOOB" else int(v)
     if t == "NUMBAR": return 0.0 if v == "NOOB" else float(v)
     if t == "YARN":  return "" if v == "NOOB" else str(v)
     if t == "TROOF": return False if v == "NOOB" else bool(v)
     return v
+
+def makeDigit(value):
+    if isinstance(value, int) or isinstance(value, float):
+        return value
+    NUMBAR_RE = r'-?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?' #floats
+    NUMBR_RE  = r'-?\d+' #integers
+
+    if re.search(NUMBAR_RE, value):
+        return float(value)
+    if re.search(NUMBR_RE, value):
+        return int(value)
+    return None
 
 # should be kinda same as in the parser's var_eval_expr()
 # untested
@@ -153,17 +173,43 @@ def eval_expr(tup, symbols):
     if tup[0] in ("Integer", "Float", "String", "Boolean"):
         return tup[1]
     if tup[0] == "CAST":
-        # looks like 
         #    [0]       [1][0]       [1][1]       [2][0]         [2][1]
         # ("CAST", (<Current_Type>, <Value>), ("Target Type", <Target_Type))
-        # if tup[1][0] in ("Integer", "Float", "String", "Boolean"):
         return cast(eval_expr(tup[1], symbols), tup[2][1])
-        # elif tup[1][0] == "Identifier":
-        #     return cast(symbols[tup[1][1]], tup[2][1])
+    
     if tup[0] in ("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
         return arith(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+    
     if tup[0] in ("BOTH_OF","EITHER_OF","WON_OF","BIGGR_OF","SMALLR_OF"):
         return bool_op(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+    
+    if tup[0] == "NOT":
+        return bool_op(tup[0], eval_expr(tup[1], symbols), 1)
+    
+    if tup[0] in ("ALL_OF", "ANY_OF"):
+        vals = []
+        for i in range(1, len(tup)):
+            result = eval_expr(tup[i], symbols)
+            if result in ("", 0, 0.0, "FAIL", "NOOB"):
+               vals.append(False)
+            else:
+               vals.append(True)           
+        return all(vals) if tup[0] == "ALL_OF" else any(vals)
+    
+    if tup[0] in ("DIFFRINT", "BOTH_SAEM"):
+        a = eval_expr(tup[1], symbols)
+        b = eval_expr(tup[2], symbols)
+
+        # return compare(tup[0], a, b)
+        new_a = makeDigit(a)
+        new_b = makeDigit(b)
+
+        if new_a and new_b:
+            return compare(tup[0], new_a, new_b)
+        else:
+        #     # replace with yield Error
+            print(f"Error at instruction {tup[0]}: Operand(s) is not NUMBR or NUMBAR")
+
     if tup[0] == "CONCATENATE":
         result = ""
         for i in range(1, len(tup)):
@@ -180,6 +226,8 @@ def evaluate_ast(node, symbols):
     if instruction == "INPUT":
         if children[0] in symbols:  # children[0] is the variable name
             input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)            
+            if input is None:
+                input = ""
             symbols[children[0]] = input
             update_symboltable(symbols)
             outputText.insert(tk.END, input+"\n")
@@ -252,8 +300,13 @@ def execute_code():
             statement_list = ast[2]
             symbolTable = p.symbols
 
+            # try:
             for i in range(1, len(statement_list)):
                 evaluate_ast(statement_list[i], symbolTable)
+            # except Exception as e:
+            #     outputText.insert(tk.End, e)
+            # except RuntimeError as e:
+            #     outputText.insert(tk.End, e)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
