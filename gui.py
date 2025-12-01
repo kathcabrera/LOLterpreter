@@ -4,33 +4,14 @@ from tkinter import filedialog
 import lol_lexer as lexer
 import parser_try as parser
 # from dataclasses import dataclass
-from parser_try import ScanError, ParseError
+from parser_try import ScanError
+from parser_try import ParseError
+from tkinter import simpledialog
+import re
 
 # Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
-# Source - https://stackoverflow.com/a
-# Posted by James Kent
-# Retrieved 2025-11-24, License - CC BY-SA 3.0
-
-# Source - https://stackoverflow.com/a
-# Posted by Universe Whole-Xuan, modified by community. See post 'Timeline' for change history
-# Retrieved 2025-11-24, License - CC BY-SA 4.0
-
-# from PIL import Image as pil
-# from pkg_resources import parse_version
-
-# if parse_version(pil.__version__)>=parse_version('10.0.0'):
-#     Image.ANTIALIAS=Image.LANCZOS
-
-
-# def Resize_Image(image, maxsize):
-#     r1 = image.size[0]/maxsize[0] # width ratio
-#     r2 = image.size[1]/maxsize[1] # height ratio
-#     ratio = max(r1, r2)
-#     newsize = (int(image.size[0]/ratio), int(image.size[1]/ratio))
-#     image = image.resize(newsize, Image.ANTIALIAS)
-#     return image
-
+class RuntimeError(Exception): ...
 class MultiList:
     def __init__(self, parent, title, name1, name2, side):
         self.parent = parent
@@ -58,7 +39,7 @@ class MultiList:
                 self.list2.insert(tk.END, v)
             
                 
-        elif isinstance(iterable[0], parser.Token):
+        elif isinstance(iterable[0], lexer.Token):
             for i in range(0, len(iterable)):
                 self.list1.insert(tk.END, iterable[i].lexeme)
                 self.list2.insert(tk.END, iterable[i].type)
@@ -102,7 +83,7 @@ class MultiList:
 
 # taken from www.w3resource.com
 def select_file():
-    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("LOL files", "*.lol *.txt"), ("All files", "*.*")])
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("LOL files", "*.lol"), ("All files", "*.*")])
     if file_path:
         file_label.config(text=f"{file_path}")
         process_file(file_path)
@@ -119,27 +100,192 @@ def process_file(file_path):
     except Exception as e:
         file_label.config(text=f"Error: {str(e)}")
 
+def update_symboltable(symbols):
+    symbols_listbox.clear()
+    symbols_listbox.populate(symbols)
+    return
+
+def arith(op, a, b):
+    to_cast = a if isinstance(b, str) else b
+    if a == "WIN":
+        a = 1
+    elif a in ("FAIL", "NOOB", ""):
+        a = 0
+    if b == "WIN":
+        b = 1
+    elif b in ("FAIL", "NOOB", ""):
+        b = 0
+
+    if isinstance(to_cast, int) or (isinstance(a, str) and isinstance(b, str)):
+        a = int(a)
+        b = int(b)
+    elif isinstance(to_cast, float):
+        a = float(a)
+        b = float(b)
+
+    if op == "SUM_OF":      return (a or 0) + (b or 0)
+    if op == "DIFF_OF":     return (a or 0) - (b or 0)
+    if op == "PRODUKT_OF":  return (a or 0) * (b or 0)
+    if op == "QUOSHUNT_OF": return (a or 0) / (b or 1)
+    if op == "MOD_OF":      return (a or 0) % (b or 1)
+    if op == "BIGGR_OF":    return a if a >= b else b
+    if op == "SMALLR_OF":   return a if a <= b else b
+
+def bool_op(op, a, b):
+    if isinstance(a, str):
+        a = 0 if a == "" or a == "NOOB" or a == "FAIL" else 1
+    if isinstance(b, str):
+        b = 0 if b == "" or b == "NOOB" or b == "FAIL" else 1
+
+    if op == "BOTH_OF":   return bool(a) and bool(b)
+    if op == "EITHER_OF": return bool(a) or bool(b)
+    if op == "WON_OF":    return bool(a) ^ bool(b)
+    if op == "NOT":       return not bool(a)
+
+def compare(op, a, b):
+    if op == "BOTH_SAEM":    return a == b
+    if op == "DIFFRINT":    return a != b
+
+def cast(v, t):
+    if t == "NUMBR": return 0 if v == "NOOB" else int(v)
+    if t == "NUMBAR": return 0.0 if v == "NOOB" else float(v)
+    if t == "YARN":  return "" if v == "NOOB" else str(v)
+    if t == "TROOF": return False if v == "NOOB" else bool(v)
+    return v
+
+def makeDigit(value):
+    if isinstance(value, int) or isinstance(value, float):
+        return value
+    NUMBAR_RE = r'-?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?' #floats
+    NUMBR_RE  = r'-?\d+' #integers
+
+    if re.search(NUMBAR_RE, value):
+        return float(value)
+    if re.search(NUMBR_RE, value):
+        return int(value)
+    return None
+
+# should be kinda same as in the parser's var_eval_expr()
+# untested
+def eval_expr(tup, symbols):
+    # print(tup)
+    if tup[0] == "Identifier":
+        return symbols[tup[1]]
+    if tup[0] in ("Integer", "Float", "String", "Boolean"):
+        return tup[1]
+    if tup[0] == "CAST":
+        #    [0]       [1][0]       [1][1]       [2][0]         [2][1]
+        # ("CAST", (<Current_Type>, <Value>), ("Target Type", <Target_Type))
+        return cast(eval_expr(tup[1], symbols), tup[2][1])
+    
+    if tup[0] in ("SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF"):
+        return arith(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+    
+    if tup[0] in ("BOTH_OF","EITHER_OF","WON_OF","BIGGR_OF","SMALLR_OF"):
+        return bool_op(tup[0], eval_expr(tup[1], symbols), eval_expr(tup[2], symbols))
+    
+    if tup[0] == "NOT":
+        return bool_op(tup[0], eval_expr(tup[1], symbols), 1)
+    
+    if tup[0] in ("ALL_OF", "ANY_OF"):
+        vals = []
+        for i in range(1, len(tup)):
+            result = eval_expr(tup[i], symbols)
+            if result in ("", 0, 0.0, "FAIL", "NOOB"):
+               vals.append(False)
+            else:
+               vals.append(True)           
+        return all(vals) if tup[0] == "ALL_OF" else any(vals)
+    
+    if tup[0] in ("DIFFRINT", "BOTH_SAEM"):
+        a = eval_expr(tup[1], symbols)
+        b = eval_expr(tup[2], symbols)
+
+        # return compare(tup[0], a, b)
+        new_a = makeDigit(a)
+        new_b = makeDigit(b)
+
+        if new_a and new_b:
+            return compare(tup[0], new_a, new_b)
+        else:
+        #     # replace with yield Error
+            print(f"Error at instruction {tup[0]}: Operand(s) is not NUMBR or NUMBAR")
+
+    if tup[0] == "CONCATENATE":
+        result = ""
+        for i in range(1, len(tup)):
+            result = result + eval_expr(tup[i], symbols)
+        return result
+
+
+def evaluate_ast(node, symbols):
+    # parser.pp_tuple(node)
+    instruction = node[0]
+    children = []
+    for i in range(1, len(node)):
+        children.append(node[i])
+
+    if instruction == "INPUT":
+        if children[0] in symbols:  # children[0] is the variable name
+            input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)            
+            if input is None:
+                input = ""
+            symbols[children[0]] = input
+            update_symboltable(symbols)
+            outputText.insert(tk.END, input+"\n")
+        else:
+            # replace this with a raise Error() later
+            print(f"Variable identifier {children[0]} has not yet been declared")
+    elif instruction == "LOOP":
+        
+        pass
+    elif instruction == "ASSIGN":
+        # children looks like 
+        #      [0][0]      [0][1]    [1][0]       [1][1]
+        # [("Identifier", <Value>), ("Value", <Expression>)]
+        if children[0][1] in symbols:
+            symbols[children[0][1]] = eval_expr(children[1][1], symbols)
+            update_symboltable(symbols)
+        else:
+            # replace this with a raise Error() later
+            print(f"Variable identifier {children[0]} has not yet been declared")
+
+    elif instruction == "PERM_CAST":    # Explicit cast using I HAS A
+        ident = children[0][1]
+        type = children[1][1]
+        if ident in symbols:
+            symbols[ident] = cast(symbols[ident], type)
+            update_symboltable(symbols)
+        else:
+            # replace this with a raise Error() later
+            print(f"Variable identifier {children[0]} has not yet been declared")
+    
+    elif instruction in ("ARITH_OPERATION", "BOOL_OPERATION"):
+        result = eval_expr(children[0], symbols)
+        symbols["IT"] = result
+        update_symboltable(symbols)
+    
+    elif instruction == "PRINT":
+        to_print = ""
+        for child in children:
+            to_print = to_print + str(eval_expr(child, symbols))
+        outputText.insert(tk.END, to_print+"\n")
+
 def execute_code():
     # clear GUI
-    # lexemes.delete(0, tk.END)
     lexemes.clear()
-    symbol_table.clear()
+    symbols_listbox.clear()
     outputText.delete("1.0", tk.END)
-    # symbolTable_listbox.delete(0, tk.END)
     
-    # Analyze; No need to call parser.analyze()
+    # Analyze
     try:
-        tokens = parser.lex(textEditor.get("1.0", "end-1c"))        
+        tokens = lexer.clean_lex(textEditor.get("1.0", "end-1c"))        
     except ScanError as e:
         outputText.insert(tk.END, e)
     except Exception as e:        
         outputText.insert(tk.END, e)
     else:
-        # for token in tokens:
-            # lexemes.insert(tk.END, f"{token.lexeme}    -    {token.type}")
-
         lexemes.populate(tokens)
-            # continue
 
         try:
             p = parser.Parser(tokens)
@@ -151,24 +297,23 @@ def execute_code():
         else:
             if len(p.symbols) == 0:
                 print(f"{p.symbols}")
-                # symbolTable_listbox.insert(tk.END, "None    -    None")
-                symbol_table.populate({"None": "None"})
+                symbols_listbox.populate({"None": "None"})
             else:
-                # for k, v in p.symbols.items():
-                    # symbolTable_listbox.insert(tk.END, f"{k}    -    {v}")
-                symbol_table.populate(p.symbols)
-                    # continue
+                symbols_listbox.populate(p.symbols)
+                parser.pp_tree(ast)
+                # parser.pp_tuple(ast)
+                print("=======================================")
             
-            for i in range(1,len(ast[2])):
-                if ast[2][i][0] == "PRINT":
-                    outputText.insert(tk.END, f"{ast[2][i][1]}\n")
-            # outputText.insert(tk.END, ast[2][1][0])
+            statement_list = ast[2]
+            symbolTable = p.symbols
 
-
-
-    # Print output in console
-    # outputText.delete("1.0", tk.END)
-    # outputText.insert(tk.END, str(parser.pp_tree(ast)))
+            # try:
+            for i in range(1, len(statement_list)):
+                evaluate_ast(statement_list[i], symbolTable)
+            # except Exception as e:
+            #     outputText.insert(tk.End, e)
+            # except RuntimeError as e:
+            #     outputText.insert(tk.End, e)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
@@ -205,8 +350,8 @@ middle_frame = tk.Frame(root)
 lexemes = MultiList(middle_frame, "LEXEMES", "Lexeme", "Classification", tk.TOP)
 lexemes.make()
 
-symbol_table = MultiList(middle_frame, "SYMBOL TABLE", "Identifier", "Value", tk.BOTTOM)
-symbol_table.make()
+symbols_listbox = MultiList(middle_frame, "SYMBOL TABLE", "Identifier", "Value", tk.BOTTOM)
+symbols_listbox.make()
 
 middle_frame.grid(row=0, column=1, sticky=tk.W+tk.E)
 

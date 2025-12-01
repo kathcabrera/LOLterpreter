@@ -5,7 +5,7 @@ from dataclasses import dataclass
 #one instance per lexeme
 @dataclass
 class Token:
-    kind: str #KEYWORD, IDENT, NUMBR, NUMBAR, YARN, TROOF, TYPE
+    type: str #KEYWORD, IDENT, NUMBR, NUMBAR, YARN, TROOF, TYPE
     lexeme: str #exact text
     line: int #line number of token first char
     col: int #col number of token first char
@@ -21,14 +21,15 @@ TYPE_RE   = r'\b(?:NOOB|NUMBR|NUMBAR|YARN|TROOF)\b' #type
 
 #Keywords
 KEYWORDS = [
+    r'HOW\s+IZ\s+I', r'IF\s+U\s+SAY\s+SO', r'IM\s+IN\s+YR', r'IM\s+OUTTA\s+YR', 
     r'FOUND\s+YR', r'I\s+IZ', r'I\s+HAS\s+A', r'IS\s+NOW\s+A',
     r'SUM\s+OF', r'DIFF\s+OF', r'PRODUKT\s+OF', r'QUOSHUNT\s+OF', r'MOD\s+OF',
-    r'BIGGR\s+OF', r'SMALLR\s+OF', r'BOTH\s+OF', r'EITHER\s+OF', r'WON\s+OF',
+    r'BIGGR\s+OF', r'SMALLR\s+OF', r'BOTH\s+OF', r'EITHER\s+OF', r'WON\s+OF', r'NOT',
     r'ANY\s+OF', r'ALL\s+OF', r'BOTH\s+SAEM',
     r'O\s+RLY\?', r'YA\s+RLY', r'NO\s+WAI', r'WTF\?',r'AN',
-    r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK', r'DIFFRINT', r'NOT',
+    r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK\s+A', r'DIFFRINT', r'NOT',
     r'BTW', r'OBTW', r'TLDR', r'HAI', r'KTHXBYE', r'WAZZUP', r'BUHBYE',
-    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY'
+    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO', r'UPPIN', r'NERFIN', r'TIL', r'WILE', r'YR'
 ]
 #Long words are checked first
 KEYWORDS.sort(key=lambda s: len(s), reverse=True)
@@ -52,11 +53,11 @@ TOKEN_SPEC = [
     ('SKIP',           SKIP_WS_RE),
 
     #Literals
-    ('YARN',           YARN_RE),
-    ('NUMBAR',         NUMBAR_RE),
-    ('NUMBR',          NUMBR_RE),
-    ('TROOF',          TROOF_RE),
-    ('TYPE',           TYPE_RE),
+    ('YARN_LIT',           YARN_RE),
+    ('NUMBAR_LIT',         NUMBAR_RE),
+    ('NUMBR_LIT',          NUMBR_RE),
+    ('TROOF_LIT',          TROOF_RE),
+    ('TYPE_LIT',           TYPE_RE),
 
     #Keywords
     ('KEYWORD',        KEYWORD_ALT),
@@ -78,18 +79,18 @@ def lex(text: str):
     
     #iterates over every match of MATCH_RE
     for m in MASTER_RE.finditer(text):
-        kind = m.lastgroup #checks named group
+        type = m.lastgroup #checks named group
         lexeme = m.group() #checks the exact text that matched
 
-        if kind == 'NEWLINE':
+        if type == 'NEWLINE':
             line += 1
             col_start_of_line = m.end()
             continue
         #Whitespace and comments are ignored 
-        if kind in ('SKIP', 'LINE_COMMENT', 'BLOCK_COMMENT'):
+        if type in ('SKIP', 'LINE_COMMENT', 'BLOCK_COMMENT'):
             continue
         #if no match then error on token
-        if kind == 'MISMATCH':
+        if type == 'MISMATCH':
             # You can raise here; for milestone we’ll just report it
             c = m.start() - col_start_of_line + 1
             yield Token('ERROR', lexeme, line, c)
@@ -98,79 +99,134 @@ def lex(text: str):
         col = m.start() - col_start_of_line + 1
 
         #Normalize KEYWORD lexeme
-        if kind == 'KEYWORD':
+        if type == 'KEYWORD':
             lexeme = re.sub(r'\s+', ' ', lexeme)
         
-        if kind == 'YARN':
+        if type == 'YARN':
             inner = lexeme[1:-1]
             yield Token('STRING_QUOTE', '"', line, col)
             # Unescape display? The spec example shows raw inner; keep raw inner text
-            yield Token('YARN_INNER', inner, line, col + 1)
+            yield Token('YARN_LIT', inner, line, col + 1)
             yield Token('STRING_QUOTE', '"', line, col + len(lexeme) - 1)
             continue
 
-        yield Token(kind, lexeme, line, col)
+        yield Token(type, lexeme, line, col)
+    
 
 #Category mapping for keywords to required labels
-CODE_DELIMS = {'HAI', 'KTHXBYE'}
-VARLIST_DELIMS = {'WAZZUP', 'BUHBYE'}
-VAR_DECL = {'I HAS A'}
-ASSIGN_FOLLOWING_IHAS = {'ITZ'}
-OUTPUT_KEYWORDS = {'VISIBLE'}
-MULTI_PARAM_SEP = {'AN'}
-ARITH_OPS = {'SUM OF', 'DIFF OF', 'PRODUKT OF', 'QUOSHUNT OF', 'MOD OF'}
-COMP_OPS  = {'BIGGR OF', 'SMALLR OF', 'BOTH SAEM', 'DIFFRINT', 'EITHER OF', 'BOTH OF', 'WON OF', 'ALL OF', 'ANY OF'}
+# CODE_DELIMS = {'HAI', 'KTHXBYE'}
+# VARLIST_DELIMS = {'WAZZUP', 'BUHBYE'}
+# VAR_DECL = {'I HAS A'}
+# ASSIGN_FOLLOWING_IHAS = {'ITZ'}
+# OUTPUT_KEYWORDS = {'VISIBLE'}
+# MULTI_PARAM_SEP = {'AN'}
+ARITH_OPS = {
+    'SUM OF': "SUM_OF", 
+    'DIFF OF': "DIFF_OF", 
+    'PRODUKT OF': "PRODUKT_OF", 
+    'QUOSHUNT OF': "QUOSHUNT_OF", 
+    'MOD OF': "MOD_OF"
+    }
+COMPARE_OPS  = {
+    'BIGGR OF': "BIGGR_OF",
+    'SMALLR OF': "SMALLR_OF",
+    'BOTH SAEM': "BOTH_SAEM",
+    'DIFFRINT': "DIFFRINT",
+    'EITHER OF': "EITHER_OF",
+    'BOTH OF': "BOTH_OF",
+    'WON OF': "WON_OF",
+    'NOT': "NOT",
+    'ALL OF': "ALL_OF",
+    'ANY OF': "ANY_OF"
 
-def print_labelled(tokens):
-     for t in tokens:
-        if t.kind == 'KEYWORD':
-            k = t.lexeme
-            if k in CODE_DELIMS:
-                print(f"Code Delimiter {k} ")
-            elif k in VARLIST_DELIMS:
-                print(f"Variable List Delimiter {k} ")
-            elif k in VAR_DECL:
-                print(f"Variable Declaration {k} ")
-            elif k in ASSIGN_FOLLOWING_IHAS:
-                print(f"Variable Assignment (following I HAS A) {k} ")
-            elif k in OUTPUT_KEYWORDS:
-                print(f"Output Keyword {k} ")
-            elif k in MULTI_PARAM_SEP:
-                print(f"Multiple Parameter Separator {k} ")
+   }
+TYPECAST_OPS = {
+    "IS NOW A": "IS_NOW_A",
+    "MAEK A": "MAEK_A"
+    }
+
+
+def clean_lex(src):
+    tokens = list(lex(src))
+    index = 0
+
+    for t in tokens:
+        k = t.lexeme
+        if t.type == 'KEYWORD':
+            if k == "HAI":
+                t.type = "CODE_START"
+            elif k == "KTHXBYE":
+                t.type = "CODE_END"
+            elif k == "WAZZUP":
+                t.type = "VARLIST_START"
+            elif k == "BUHBYE":
+                t.type = "VARLIST_END"
+            elif k == "I HAS A":
+                t.type = "VAR_DECL"
+            elif k == "ITZ":
+                t.type = "VAR_ASSIGN_ITZ"
+            elif k == "GIMMEH":
+                t.type = "GIMMEH"
+            elif k == "VISIBLE":
+                t.type = "VISIBLE"
+            elif k == "AN":
+                t.type = "AN"
             elif k in ARITH_OPS:
-                print(f"Arithmetic Operator {k} ")
-            elif k in COMP_OPS:
-                print(f"Comparison Operator {k} ")
-            else:
-                
-                print(f"Keyword {k} ")
+                t.type = ARITH_OPS[k]
+            elif k in COMPARE_OPS:
+                t.type = COMPARE_OPS[k]
+            elif k == "+":
+                t.type = "+"
+            elif k == "SMOOSH":
+                t.type = "SMOOSH"
+            elif k == "R":
+                t.type = "R"
+            elif k in TYPECAST_OPS:
+                t.type = TYPECAST_OPS[k]
+            elif k == "MKAY":
+                t.type = "MKAY"
+            elif k == "O RLY?":
+                t.type = "O_RLY?"
+            elif k == "OIC":
+                t.type = "OIC"
+            elif k == "YA RLY":
+                t.type = "YA_RLY"
+            elif k == "NO WAI":
+                t.type = "NO_WAI"
+            elif k == "WTF?":
+                t.type = "WTF?"
+            elif k == "OMG":
+                t.type = "OMG"
+            elif k == "OMGWTF":
+                t.type = "OMGWTF"
+            elif k == "HOW IZ I":
+                t.type = "HOW_IZ_I"
+            elif k == "IF U SAY SO":
+                t.type = "IF_U_SAY_SO"
+            elif k == "FOUND YR":
+                t.type = "FOUND_YR"
+            elif k == "GTFO":
+                t.type = "GTFO"
+            elif k == "I IZ":
+                t.type = "I_IZ"
+            elif k == "IM IN YR":
+                t.type = "IM_IN_YR"
+            elif k == "IM OUTTA YR":
+                t.type = "IM_OUTTA_YR"
+            elif k == "TIL":
+                t.type = "TIL"
+            elif k == "WILE":
+                t.type = "WILE"
+            elif k == "YR":
+                t.type = "YR"
+            elif k == "UPPIN":
+                t.type = "UPPIN"
+            elif k == "NERFIN":
+                t.type = "NERFIN"
+   
+    return tokens;            
 
-        elif t.kind == 'IDENT':
-            print(f"Variable Identifier {t.lexeme} ")
 
-        elif t.kind == 'NUMBR':
-            print(f"Integer Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'NUMBAR':
-            print(f"Float Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'TROOF':
-            if t.lexeme == 'WIN':
-                print(f"Boolean Value (True) WIN WIN")
-            else:
-                print(f"Boolean Value (False) FAIL FAIL")
-
-        elif t.kind == 'TYPE':
-            print(f"Type Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'STRING_QUOTE':
-            print('String Delimiter " ')
-
-        elif t.kind == 'YARN_INNER':
-            print(f"String Literal {t.lexeme} {t.lexeme}")
-
-        elif t.kind == 'ERROR':
-            print(f"LEXICAL ERROR {t.lexeme}")
 
 def main():
     #reads the file input
@@ -182,8 +238,10 @@ def main():
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         code = f.read()
 
-    tokens = list(lex(code))
-    print_labelled(tokens)
+    tokens = clean_lex(code)
+    
+    for token in tokens:
+        print(f"Token\n\ttype:{token.type}\n\tlexeme:{token.lexeme}\n")
 
 if __name__ == '__main__':
     main()
