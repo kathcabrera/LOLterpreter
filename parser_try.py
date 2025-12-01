@@ -227,7 +227,10 @@ class Parser:
             elif self.at("FOUND_YR"):
                 items.append(self.return_stmt())
             elif self.at("GTFO"):
-                items.append(node("BREAK"))
+                if self.peek(1).type in ("OMG", "OMGWTF", "OIC"):
+                    items.append(node("BREAK", "SWITCH"))
+                else:
+                    items.append(node("BREAK", ""))
                 self.need("GTFO")
             elif self.at("HOW_IZ_I"):
                 items.append(self.call_stmt)

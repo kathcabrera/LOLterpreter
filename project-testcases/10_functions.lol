@@ -26,7 +26,7 @@ HAI
     VISIBLE IT
 
     GIMMEH name
-BTW    I IZ printName YR name
+    I IZ printName YR name
     VISIBLE IT
 
     I IZ printNum YR SUM OF x AN 2

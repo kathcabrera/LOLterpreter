@@ -261,6 +261,8 @@ def eval_switch(node, symbols):
 
             try:
                 for stmt in code_block[1:]:  
+                    if stmt[0] == "BREAK":
+                        break;
                     evaluate_ast(stmt, symbols)
             except BreakException:
                 
@@ -287,7 +289,11 @@ def evaluate_ast(node, symbols):
     #     children.append(node[i])
 
     if instruction == "BREAK":
-        raise BreakException()
+        if children[0] == "SWITCH":
+            raise BreakException()
+        else:
+            symbols["IT"] = "NOOB"
+            update_symboltable(symbols)
     if instruction == "IT":
         # value = eval_expr(children[0], symbols)
         # symbols["IT"] = value
@@ -360,27 +366,14 @@ def evaluate_ast(node, symbols):
         args_expr = children[1][1:]
         args = []
         for i in range(0, len(args_expr)):
-            # args[i] = eval_expr(args[i], symbols)
             args.append(eval_expr(args_expr[i], symbols))
-        # for i in range(0, len(args)):
-        #     if args[i][1] not in symbols:
-        #         raise RuntimeError(f"Runtime Error: Variable {args[i][1]} does not exist")
+
         func_symbols = func["func_symbols"]
 
         if len(func["func_symbols"]) != len(args):
             raise RuntimeError(f"Runtime Error: Call to function {children[0][1]} expecting {len(func_symbols)} arguments, got {len(args)} arguments")
-        
-        # add parameters to symbol table
-        # for i in range(0, len(func["func_symbols"])):
-        #     symbols[func["func_symbols"][i]] = "NOOB"
-        #     update_symboltable(symbols)
-        # for i in range(0, len(func_symbols)):
-        #     func_symbols
 
         # initialize parameters to arguments
-        # for i in range(0, len(args)):
-        #     symbols[args[i][1]] = eval_expr(args[i], symbols)
-        #     update_symboltable(symbols)
         keys = list(func_symbols.keys())
         for i in range(0, len(args)):
             func_symbols[keys[i]] = args[i]
@@ -388,18 +381,14 @@ def evaluate_ast(node, symbols):
         
         # run code block
         for i in range(0, len(func["code_block"])):
+            if func["code_block"][i][0] == "BREAK":
+                func_symbols["IT"] = "NOOB"
+                break
             evaluate_ast(func["code_block"][i], func_symbols)
 
         symbols["IT"] = func_symbols["IT"]
         update_symboltable(symbols)
 
-        # remove parameters from symbol table
-        # for i in range(0, len(func_symbols)):
-        #     # symbols[func[parameters][i]] = "NOOB"
-        #     del symbols[func_symbols[i]]
-
-
-        pass
 
     elif instruction == "RETURN":
         update_it(eval_expr(node[1], symbols))
