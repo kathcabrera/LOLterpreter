@@ -223,6 +223,8 @@ def clean_lex(src):
                 t.type = "UPPIN"
             elif k == "NERFIN":
                 t.type = "NERFIN"
+            elif k == "MEBBE":
+                t.type = "MEBBE"
    
     return tokens;            
 
