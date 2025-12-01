@@ -7,7 +7,7 @@ class ScanError(Exception): ...
 class ParseError(Exception): ...
 
 # Token types that will be encountered as the first token of the line
-INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR", "HOW_IZ_I", "FOUND_YR", "GTFO", "I_IZ")
+INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR", "HOW_IZ_I", "FOUND_YR", "GTFO", "I_IZ", "O_RLY?", "WTF?")
 
 #ast helpers
 def node(tag: str, *children: Any) -> Tuple[str, Any]:
@@ -139,14 +139,18 @@ class Parser:
                 items.append(self.func_stmt())
             elif self.at("I_IZ"):
                 items.append(self.call_stmt())
+            elif self.at("WTF?"):
+                items.append(self.switch_stmt())
             else:
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())
                 
                 elif self.peek(1).type in ("IS_NOW_A", "MAEK_A"):
                     items.append(self.cast_stmt())
+                # elif self.peek(1).type in ("WTF?"):
                 else:
-                    break
+                    items.append(("IT", self.eval_expr()))
+                    # break
             # self.skip_nl()
         return node("STATEMENT_LIST", *items)
 
@@ -185,12 +189,42 @@ class Parser:
                     break
         return items
 
-    def eval_parameter(self, acc: list):
+    def get_func_parameters(self, acc: list):
         self.need("YR")
         acc.append(self.eval_expr())
         if self.at("AN"):
             self.need("AN")
-            self.eval_parameter(acc)
+            self.get_func_parameters(acc)
+
+    def switch_stmt(self):
+        self.need("WTF?")
+
+        case_blocks = []
+        self.get_switch_cases(case_blocks)
+
+        self.need("OIC")
+
+        return node("SWITCH", *case_blocks)
+
+    def get_switch_cases(self, acc: list):
+        case = ...
+        if self.at("OMG"):
+            self.need("OMG")
+            if self.at("NUMBR_LIT", "NUMBAR_LIT", "YARN_LIT", "TROOF_LIT"):
+                case = self.eval_expr()
+            else:
+                raise ParseError(f"Parser Error at {self.peek().line}:{self.peek().col}: Case is of wrong Type, must be LITERAL")
+        if self.at("OMGWTF"):
+            self.need("OMGWTF")
+            case = "DEFAULT"
+
+        items = self.eval_codeblock()
+        acc.append(("CASE", case, ("CODE_BLOCK", *items)))
+
+        if self.at("OMG", "OMGWTF"):
+            self.get_switch_cases(acc)
+
+        return
 
     def call_stmt(self):
         self.need("I_IZ")
@@ -198,7 +232,7 @@ class Parser:
         args = []
 
         if self.at("YR"):
-            self.eval_parameter(args)
+            self.get_func_parameters(args)
 
         return node("CALL", func_name, ("Arguments", *args))      
 
@@ -227,7 +261,7 @@ class Parser:
         
         parameters = []
         if self.at("YR"):
-            self.eval_parameter(parameters)
+            self.get_func_parameters(parameters)
         
         items = self.eval_codeblock()
 
