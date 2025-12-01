@@ -6,9 +6,9 @@ HAI
     BUHBYE
     
     VISIBLE "Hello! Please enter two strings:"
-    VISIBLE "String 1: "
+    VISIBLE "String 1: " !
     GIMMEH x
-    VISIBLE "String 2: "
+    VISIBLE "String 2: " !
     GIMMEH y
 
     VISIBLE SMOOSH x AN y

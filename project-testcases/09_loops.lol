@@ -4,7 +4,7 @@ HAI
 		I HAS A num2
 	BUHBYE
 	
-	VISIBLE "Gimmeh a number: "
+	VISIBLE "Gimmeh a number: " !
 	GIMMEH num1
 
 	num2 R 0
