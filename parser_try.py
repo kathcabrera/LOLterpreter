@@ -298,11 +298,33 @@ class Parser:
         vals = []
         
         vals.append(self.eval_expr())
-        while self.match("+", "AN"):  
-            vals.append(self.eval_expr())
-        return node("PRINT", *vals)
-                # items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
+        expr_start_types = (
+        "NUMBR_LIT", "NUMBAR_LIT", "YARN_LIT", "TROOF_LIT",
+        "IDENT",
+        "SUM_OF", "DIFF_OF", "PRODUKT_OF", "QUOSHUNT_OF", "MOD_OF",
+        "BIGGR_OF", "SMALLR_OF",
+        "BOTH_OF", "EITHER_OF", "WON_OF", "NOT",
+        "ALL_OF", "ANY_OF", "BOTH_SAEM",
+        "SMOOSH", "MAEK_A",
+        )
+        while True:
+            self.match("+", "AN")
+            if self.peek().type in (
+                "CODE_END", "OIC", "OMG", "OMGWTF", "GTFO",
+                "IM_OUTTA_YR", "VARLIST_END",
+                "VISIBLE", "GIMMEH", "IM_IN_YR", "HOW_IZ_I", "I_IZ", "WTF?",
+            ):
+                break
 
+            if self.peek().type in expr_start_types:
+                vals.append(self.eval_expr())
+            else:
+                break
+            #while self.match("+", "AN"):  
+                #vals.append(self.eval_expr())
+            #return node("PRINT", *vals)
+                    # items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
+        return node("PRINT", *vals)
     def assign_stmt(self):
         name = self.need("IDENT").lexeme
         self.need("R")

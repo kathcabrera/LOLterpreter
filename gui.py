@@ -11,6 +11,7 @@ import re
 # Source - https://www.w3resource.com/python-exercises/tkinter/python-tkinter-dialogs-and-file-handling-exercise-3.php
 
 class RuntimeError(Exception): ...
+class BreakException(Exception): ...
 class MultiList:
     def __init__(self, parent, title, name1, name2, side):
         self.parent = parent
@@ -167,7 +168,11 @@ def makeDigit(value):
         return int(value)
     
     raise RuntimeError(f"Runtime Error: Cannot implicitly cast `{value}` to digit ")
-
+def equal_for_switch(a,b):
+    try:
+        return makeDigit(a) == makeDigit(b)
+    except RuntimeError:
+        return a == b
 # should be kinda same as in the parser's var_eval_expr()
 # untested
 def eval_expr(tup, symbols):
@@ -232,7 +237,40 @@ def loop_code(operation, variable, symbols, *code_block):
         symbols[variable[1]] -= 1
         
     update_symboltable(symbols)
+def eval_switch(node, symbols):
+    cases = node[1:]
+    
+    switch_val = symbols.get("IT", None)
+    default_block = None
+    
+    #first pass
+    for case_node in cases:
+        tag = case_node[0]      
+        case_key = case_node[1] 
+        code_block = case_node[2]
+        
+        if case_key == "DEFAULT":
+            default_block = code_block
+            continue
+        #evaluate case literal
+        case_val = eval_expr(case_key, symbols)
+        
+        if equal_for_switch(switch_val, case_val):
 
+            try:
+                for stmt in code_block[1:]:  
+                    evaluate_ast(stmt, symbols)
+            except BreakException:
+                
+                pass
+            return  
+    #No case matched
+    if default_block is not None:
+        try:
+            for stmt in default_block[1:]:  # skip "CODE_BLOCK"
+                evaluate_ast(stmt, symbols)
+        except BreakException:
+            pass
 def evaluate_ast(node, symbols):
     # parser.pp_tuple(node)
     instruction = node[0]
@@ -240,6 +278,13 @@ def evaluate_ast(node, symbols):
     for i in range(1, len(node)):
         children.append(node[i])
 
+    if instruction == "BREAK":
+        raise BreakException()
+    if instruction == "IT":
+        value = eval_expr(children[0], symbols)
+        symbols["IT"] = value
+        update_symboltable(symbols)
+        return
     if instruction == "INPUT":
         if children[0] in symbols:  # children[0] is the variable name
             input = simpledialog.askstring(f"GIMMEH {children[0]}", "", parent=root)            
@@ -249,14 +294,10 @@ def evaluate_ast(node, symbols):
             update_symboltable(symbols)
             outputText.insert(tk.END, input+"\n")
         else:
-            # replace this with a raise Error() later
             print(f"Variable identifier {children[0]} has not yet been declared")
 
     elif instruction == "SWITCH":
-        # SWITCH logic here
-
-
-        pass
+        eval_switch(node, symbols)
 
     elif instruction == "IF_ELSE":
         pass
@@ -279,14 +320,15 @@ def evaluate_ast(node, symbols):
             code_block.append(children[3][i])
 
         # print(code_block)
-        
-        if loop_type == "WILE":
-            while eval_expr(expression, symbols):
-                loop_code(operation, variable, symbols, *code_block)
-        else:       # loop_type == "TIL"
-            while eval_expr(expression, symbols) == False:
-                loop_code(operation, variable, symbols, *code_block)
-
+        try:
+            if loop_type == "WILE":
+                while eval_expr(expression, symbols):
+                    loop_code(operation, variable, symbols, *code_block)
+            else:       # loop_type == "TIL"
+                while eval_expr(expression, symbols) == False:
+                    loop_code(operation, variable, symbols, *code_block)
+        except BreakException:
+            pass
     elif instruction == "ASSIGN":
         # children looks like 
         #      [0][0]      [0][1]    [1][0]       [1][1]
@@ -358,10 +400,10 @@ def execute_code():
             try:
                 for i in range(1, len(statement_list)):
                     evaluate_ast(statement_list[i], symbolTable)
-            except Exception as e:
-                outputText.insert(tk.End, e)
             except RuntimeError as e:
-                outputText.insert(tk.End, e)
+                outputText.insert(tk.END, e)
+            except Exception as e:
+                outputText.insert(tk.END, e)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
