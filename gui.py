@@ -3,7 +3,6 @@ from PIL import Image
 from tkinter import filedialog
 import lol_lexer as lexer
 import parser_try as parser
-# from dataclasses import dataclass
 from parser_try import ScanError
 from parser_try import ParseError
 from tkinter import simpledialog
@@ -115,6 +114,9 @@ def arith(op, a, b):
         b = 1
     elif b in ("FAIL", "NOOB", ""):
         b = 0
+    
+    a = makeDigit(a)
+    b = makeDigit(b)
 
     if isinstance(to_cast, int) or (isinstance(a, str) and isinstance(b, str)):
         a = int(a)
@@ -163,7 +165,8 @@ def makeDigit(value):
         return float(value)
     if re.search(NUMBR_RE, value):
         return int(value)
-    return None
+    
+    raise RuntimeError(f"Runtime Error: Cannot implicitly cast `{value}` to digit ")
 
 # should be kinda same as in the parser's var_eval_expr()
 # untested
@@ -205,11 +208,11 @@ def eval_expr(tup, symbols):
         new_a = makeDigit(a)
         new_b = makeDigit(b)
 
-        if new_a and new_b:
-            return compare(tup[0], new_a, new_b)
-        else:
-        #     # replace with yield Error
-            print(f"Error at instruction {tup[0]}: Operand(s) is not NUMBR or NUMBAR")
+        # if new_a and new_b:
+        return compare(tup[0], new_a, new_b)
+        # else:
+        # #     # replace with yield Error
+        #     print(f"Error at instruction {tup[0]}: Operand(s) is not NUMBR or NUMBAR")
 
     if tup[0] == "CONCATENATE":
         result = ""
@@ -217,6 +220,18 @@ def eval_expr(tup, symbols):
             result = result + eval_expr(tup[i], symbols)
         return result
 
+def loop_code(operation, variable, symbols, *code_block):
+    # run code block
+    for i in range(0, len(code_block)):
+        evaluate_ast(code_block[i], symbols)
+
+    #increment or decrement
+    if operation == "UPPIN":
+        symbols[variable[1]] += 1
+    else:
+        symbols[variable[1]] -= 1
+        
+    update_symboltable(symbols)
 
 def evaluate_ast(node, symbols):
     # parser.pp_tuple(node)
@@ -236,9 +251,28 @@ def evaluate_ast(node, symbols):
         else:
             # replace this with a raise Error() later
             print(f"Variable identifier {children[0]} has not yet been declared")
+    
     elif instruction == "LOOP":
+        label = children[0][1]
+        operation = children[1][0]
+        if children[1][1][1] not in symbols:
+            raise RuntimeError(f"Runtime Error: The variable '{children[1][1][1]}' has not yet been declared")
+        variable = children[1][1]
+        loop_type = children[2][0]
+        expression = children[2][1]
+        code_block = []
+        for i in range(1, len(children[3])):
+            code_block.append(children[3][i])
+
+        # print(code_block)
         
-        pass
+        if loop_type == "WILE":
+            while eval_expr(expression, symbols):
+                loop_code(operation, variable, symbols, *code_block)
+        else:       # loop_type == "TIL"
+            while eval_expr(expression, symbols) == False:
+                loop_code(operation, variable, symbols, *code_block)
+
     elif instruction == "ASSIGN":
         # children looks like 
         #      [0][0]      [0][1]    [1][0]       [1][1]
@@ -307,13 +341,13 @@ def execute_code():
             statement_list = ast[2]
             symbolTable = p.symbols
 
-            # try:
-            for i in range(1, len(statement_list)):
-                evaluate_ast(statement_list[i], symbolTable)
-            # except Exception as e:
-            #     outputText.insert(tk.End, e)
-            # except RuntimeError as e:
-            #     outputText.insert(tk.End, e)
+            try:
+                for i in range(1, len(statement_list)):
+                    evaluate_ast(statement_list[i], symbolTable)
+            except Exception as e:
+                outputText.insert(tk.End, e)
+            except RuntimeError as e:
+                outputText.insert(tk.End, e)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
