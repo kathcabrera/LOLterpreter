@@ -29,7 +29,7 @@ KEYWORDS = [
     r'O\s+RLY\?', r'YA\s+RLY', r'NO\s+WAI', r'WTF\?',r'AN',
     r'GIMMEH', r'VISIBLE', r'SMOOSH', r'MAEK\s+A', r'DIFFRINT', r'NOT',
     r'BTW', r'OBTW', r'TLDR', r'HAI', r'KTHXBYE', r'WAZZUP', r'BUHBYE',
-    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO', r'UPPIN', r'NERFIN', r'TIL', r'WILE', r'YR'
+    r'ITZ', r'R', r'OIC', r'MEBBE', r'A', r'MKAY', r'\+', r'OMG', r'OMGWTF', r'GTFO', r'UPPIN', r'NERFIN', r'TIL', r'WILE', r'YR', r'\!'
 ]
 #Long words are checked first
 KEYWORDS.sort(key=lambda s: len(s), reverse=True)
@@ -225,6 +225,8 @@ def clean_lex(src):
                 t.type = "NERFIN"
             elif k == "MEBBE":
                 t.type = "MEBBE"
+            elif k == "!":
+                t.type = "EXCLAMATION"
    
     return tokens;            
 

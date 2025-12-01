@@ -445,9 +445,16 @@ def evaluate_ast(node, symbols):
     
     elif instruction == "PRINT":
         to_print = ""
+        no_nl_flag = False
         for child in children:
+            if child == "NO_NL":
+                no_nl_flag = True
+                break
             to_print = to_print + str(eval_expr(child, symbols))
-        outputText.insert(tk.END, to_print+"\n")
+        
+        if no_nl_flag == False:
+            to_print = to_print + "\n"
+        outputText.insert(tk.END, to_print)
 
 
 

@@ -376,7 +376,7 @@ class Parser:
             if t0.type in (
                 "CODE_END", "OIC", "OMG", "OMGWTF", "GTFO",
                 "IM_OUTTA_YR", "VARLIST_END",
-                "VISIBLE", "GIMMEH", "IM_IN_YR", "HOW_IZ_I", "I_IZ", "WTF?",
+                "VISIBLE", "GIMMEH", "IM_IN_YR", "HOW_IZ_I", "I_IZ", "WTF?", "EXCLAMATION"
             ):
                 break
             if t0.type == "IDENT" and self.peek(1).type in ("R", "IS_NOW_A", "MAEK_A"):
@@ -393,6 +393,8 @@ class Parser:
                 #vals.append(self.eval_expr())
             #return node("PRINT", *vals)
                     # items.append(node("VARIABLE", ("Identifier", ident), ("Value", val)))
+        if self.match("EXCLAMATION"):
+            vals.append(("NO_NL"))
         return node("PRINT", *vals)
     def assign_stmt(self):
         name = self.need("IDENT").lexeme
