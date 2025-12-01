@@ -178,6 +178,8 @@ def equal_for_switch(a,b):
 def eval_expr(tup, symbols):
     # print(tup)
     if tup[0] == "Identifier":
+        if tup[1] not in symbols:
+            raise RuntimeError(f"Runtime Error: Variable {tup[1]} does not exist")
         return symbols[tup[1]]
     if tup[0] in ("Integer", "Float", "String", "Boolean"):
         return tup[1]
@@ -301,7 +303,8 @@ def evaluate_ast(node, symbols):
             update_symboltable(symbols)
             outputText.insert(tk.END, input+"\n")
         else:
-            print(f"Variable identifier {children[0]} has not yet been declared")
+            # print(f"Variable identifier {children[0]} has not yet been declared")
+            raise RuntimeError(f"Variable identifier {children[0]} has not yet been declared")
 
     elif instruction == "SWITCH":
         eval_switch(node, symbols)
@@ -312,7 +315,6 @@ def evaluate_ast(node, symbols):
         it = symbols.get("IT", None)
 
         if it == True or it == "WIN":   # IF block
-            # code_block = blocks[curr_block][1:]
             code_block = blocks[curr_block][1:]
             for i in range(0, len(code_block)):
                 evaluate_ast(code_block[i], symbols)
@@ -335,8 +337,73 @@ def evaluate_ast(node, symbols):
                                 evaluate_ast(code_block[i], symbols) # evaluate MEBBE block
                         
 
-    # elif instruction == "FUNC_DECLARATION":
-    #     pass
+    elif instruction == "FUNCTION":
+        name = children[0][1]
+        parameters = children[1][1:]
+        code_block = children[2][1:]
+        func_symbols = {}
+        for i in range(0, len(parameters)):
+            func_symbols[parameters[i][1]] = "NOOB"
+
+        symbols[name] = {"func_symbols": func_symbols, "code_block": code_block}
+        update_symboltable(symbols)
+
+    elif instruction == "RETURN":
+        update_it(children[0], symbols)
+        # update_symboltable(symbols)
+        pass
+
+    elif instruction == "CALL":
+        if children[0][1] not in symbols:
+            raise RuntimeError(f"Runtime Error: Function {children[0][1]} does not exist")
+        func = eval_expr(children[0], symbols)
+        args_expr = children[1][1:]
+        args = []
+        for i in range(0, len(args_expr)):
+            # args[i] = eval_expr(args[i], symbols)
+            args.append(eval_expr(args_expr[i], symbols))
+        # for i in range(0, len(args)):
+        #     if args[i][1] not in symbols:
+        #         raise RuntimeError(f"Runtime Error: Variable {args[i][1]} does not exist")
+        func_symbols = func["func_symbols"]
+
+        if len(func["func_symbols"]) != len(args):
+            raise RuntimeError(f"Runtime Error: Call to function {children[0][1]} expecting {len(func_symbols)} arguments, got {len(args)} arguments")
+        
+        # add parameters to symbol table
+        # for i in range(0, len(func["func_symbols"])):
+        #     symbols[func["func_symbols"][i]] = "NOOB"
+        #     update_symboltable(symbols)
+        # for i in range(0, len(func_symbols)):
+        #     func_symbols
+
+        # initialize parameters to arguments
+        # for i in range(0, len(args)):
+        #     symbols[args[i][1]] = eval_expr(args[i], symbols)
+        #     update_symboltable(symbols)
+        keys = list(func_symbols.keys())
+        for i in range(0, len(args)):
+            func_symbols[keys[i]] = args[i]
+        func_symbols["IT"] = "NOOB"
+        
+        # run code block
+        for i in range(0, len(func["code_block"])):
+            evaluate_ast(func["code_block"][i], func_symbols)
+
+        symbols["IT"] = func_symbols["IT"]
+        update_symboltable(symbols)
+
+        # remove parameters from symbol table
+        # for i in range(0, len(func_symbols)):
+        #     # symbols[func[parameters][i]] = "NOOB"
+        #     del symbols[func_symbols[i]]
+
+
+        pass
+
+    elif instruction == "RETURN":
+        update_it(eval_expr(node[1], symbols))
+        pass
 
     elif instruction == "LOOP":
         label = children[0][1]
