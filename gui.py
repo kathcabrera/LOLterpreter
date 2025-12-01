@@ -251,7 +251,21 @@ def evaluate_ast(node, symbols):
         else:
             # replace this with a raise Error() later
             print(f"Variable identifier {children[0]} has not yet been declared")
-    
+
+    elif instruction == "SWITCH":
+        # SWITCH logic here
+
+
+        pass
+
+    elif instruction == "IF_ELSE":
+        pass
+
+    # elif instruction == "FUNC_DECLARATION":
+    #     pass
+
+
+
     elif instruction == "LOOP":
         label = children[0][1]
         operation = children[1][0]
@@ -341,13 +355,13 @@ def execute_code():
             statement_list = ast[2]
             symbolTable = p.symbols
 
-            # try:
-            #     for i in range(1, len(statement_list)):
-            #         evaluate_ast(statement_list[i], symbolTable)
-            # except Exception as e:
-            #     outputText.insert(tk.End, e)
-            # except RuntimeError as e:
-            #     outputText.insert(tk.End, e)
+            try:
+                for i in range(1, len(statement_list)):
+                    evaluate_ast(statement_list[i], symbolTable)
+            except Exception as e:
+                outputText.insert(tk.End, e)
+            except RuntimeError as e:
+                outputText.insert(tk.End, e)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
