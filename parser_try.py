@@ -7,7 +7,7 @@ class ScanError(Exception): ...
 class ParseError(Exception): ...
 
 # Token types that will be encountered as the first token of the line
-INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR", "HOW_IZ_I", "FOUND_YR", "GTFO", "I_IZ", "O_RLY?", "WTF?")
+INLINE_TYPES = ("VISIBLE", "IDENT", "GIMMEH", "+", "SMOOSH", "IS_NOW_A","SUM_OF","DIFF_OF","PRODUKT_OF","QUOSHUNT_OF","MOD_OF","BIGGR_OF","SMALLR_OF","BOTH_OF","EITHER_OF","WON_OF","NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT", "SMOOSH", "IM_IN_YR", "HOW_IZ_I", "FOUND_YR", "GTFO", "I_IZ", "O_RLY?", "WTF?", "TROOF_LIT", "NUMBR_LIT", "NUMBAR_LIT", "YARN_LIT")
 
 #ast helpers
 def node(tag: str, *children: Any) -> Tuple[str, Any]:
@@ -141,18 +141,62 @@ class Parser:
                 items.append(self.call_stmt())
             elif self.at("WTF?"):
                 items.append(self.switch_stmt())
-            else:
+            elif self.at("O_RLY?"):
+                items.append(self.if_else_stmt())
+            elif self.at("IDENT"):
                 if self.peek(1).type == "R":
-                    items.append(self.assign_stmt())
-                
+                    items.append(self.assign_stmt())                
                 elif self.peek(1).type in ("IS_NOW_A", "MAEK_A"):
                     items.append(self.cast_stmt())
-                # elif self.peek(1).type in ("WTF?"):
                 else:
                     items.append(("IT", self.eval_expr()))
-                    # break
+                    # pass
+            elif self.at("TROOF_LIT", "NUMBR_LIT", "NUMBAR_LIT", "YARN_LIT"):
+                    items.append(("IT", self.eval_expr()))
+
+            else:
+                # elif self.peek(1).type in ("WTF?"):
+                # else:
+                break
             # self.skip_nl()
         return node("STATEMENT_LIST", *items)
+
+    def if_else_stmt(self):
+        self.need("O_RLY?")
+
+        blocks = []
+        self.get_if_else_blocks(blocks)
+
+        self.need("OIC")
+
+        return node("IF_ELSE", *blocks)
+
+    def get_if_else_blocks(self, acc: list):
+        if self.at("NO_WAI"):
+            self.need("NO_WAI")
+            code_block = self.eval_codeblock()
+            acc.append(("ELSE_BLOCK", *code_block))
+            return
+        
+        if self.at("YA_RLY"):
+            self.need("YA_RLY")
+            code_block = self.eval_codeblock()
+            acc.append(("IF_BLOCK", *code_block))
+        
+        if self.at("MEBBE"):
+            self.need("MEBBE")
+            if self.at("BOTH_OF","EITHER_OF","WON_OF", "NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT"):
+                expression = self.eval_expr()
+                code_block = self.eval_codeblock()
+                acc.append(("ELIF_BLOCK", expression, ("CODE_BLOCK", *code_block)))
+            else: 
+                raise ParseError(f"Parser Error at {self.peek().line}:{self.peek().col}: MEBBE expression is of wrong Type, must be COMPARISON or BOOLEAN expression ")
+
+
+        # acc.append((block_type, *code_block))
+        if self.at("YA_RLY", "MEBBE", "NO_WAI"):
+            self.get_if_else_blocks(acc)
+        return
 
     def eval_codeblock(self):
         items = []
@@ -186,7 +230,9 @@ class Parser:
                 elif self.peek(1).type in ("IS_NOW_A", "MAEK_A"):
                     items.append(self.cast_stmt())
                 else:
-                    break
+                    items.append(("IT", self.eval_expr()))
+                # else:
+                #     break
         return items
 
     def get_func_parameters(self, acc: list):

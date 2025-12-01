@@ -355,13 +355,13 @@ def execute_code():
             statement_list = ast[2]
             symbolTable = p.symbols
 
-            try:
-                for i in range(1, len(statement_list)):
-                    evaluate_ast(statement_list[i], symbolTable)
-            except Exception as e:
-                outputText.insert(tk.End, e)
-            except RuntimeError as e:
-                outputText.insert(tk.End, e)
+            # try:
+            #     for i in range(1, len(statement_list)):
+            #         evaluate_ast(statement_list[i], symbolTable)
+            # except Exception as e:
+            #     outputText.insert(tk.End, e)
+            # except RuntimeError as e:
+            #     outputText.insert(tk.End, e)
 
 # ================================ GUI Widgets ================================
 root = tk.Tk()
