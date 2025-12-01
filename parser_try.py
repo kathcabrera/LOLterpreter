@@ -309,17 +309,23 @@ class Parser:
         )
         while True:
             self.match("+", "AN")
-            if self.peek().type in (
+            t0 = self.peek()
+            if t0.type in (
                 "CODE_END", "OIC", "OMG", "OMGWTF", "GTFO",
                 "IM_OUTTA_YR", "VARLIST_END",
                 "VISIBLE", "GIMMEH", "IM_IN_YR", "HOW_IZ_I", "I_IZ", "WTF?",
             ):
                 break
-
-            if self.peek().type in expr_start_types:
+            if t0.type == "IDENT" and self.peek(1).type in ("R", "IS_NOW_A", "MAEK_A"):
+                break
+            if t0.type in expr_start_types:
                 vals.append(self.eval_expr())
             else:
                 break
+            #if t0().type in expr_start_types:
+                vals.append(self.eval_expr())
+            #else:
+                #break
             #while self.match("+", "AN"):  
                 #vals.append(self.eval_expr())
             #return node("PRINT", *vals)
