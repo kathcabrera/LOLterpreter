@@ -271,19 +271,26 @@ def eval_switch(node, symbols):
                 evaluate_ast(stmt, symbols)
         except BreakException:
             pass
+
+def update_it(node, symbols):
+    value = eval_expr(node, symbols)
+    symbols["IT"] = value
+    update_symboltable(symbols)
+
 def evaluate_ast(node, symbols):
     # parser.pp_tuple(node)
     instruction = node[0]
-    children = []
-    for i in range(1, len(node)):
-        children.append(node[i])
+    children = node[1:]
+    # for i in range(1, len(node)):
+    #     children.append(node[i])
 
     if instruction == "BREAK":
         raise BreakException()
     if instruction == "IT":
-        value = eval_expr(children[0], symbols)
-        symbols["IT"] = value
-        update_symboltable(symbols)
+        # value = eval_expr(children[0], symbols)
+        # symbols["IT"] = value
+        # update_symboltable(symbols)
+        update_it(children[0], symbols)
         return
     if instruction == "INPUT":
         if children[0] in symbols:  # children[0] is the variable name
@@ -300,12 +307,36 @@ def evaluate_ast(node, symbols):
         eval_switch(node, symbols)
 
     elif instruction == "IF_ELSE":
-        pass
+        blocks = node[1:]
+        curr_block = 0
+        it = symbols.get("IT", None)
+
+        if it == True or it == "WIN":   # IF block
+            # code_block = blocks[curr_block][1:]
+            code_block = blocks[curr_block][1:]
+            for i in range(0, len(code_block)):
+                evaluate_ast(code_block[i], symbols)
+        else:
+            if len(blocks) != 1:     # if there is only IF block, get out           
+                while it == False:
+                    curr_block += 1
+                    # ELSE block
+                    if blocks[curr_block][0] == "ELSE_BLOCK":
+                        code_block = blocks[curr_block][1:]
+                        for i in range(0, len(code_block)):
+                            evaluate_ast(code_block[i], symbols)
+                        break
+                    else:
+                        update_it(blocks[curr_block][1], symbols)
+                        it = symbols.get("IT", None)
+                        if it == True:
+                            code_block = blocks[curr_block][2][1:]
+                            for i in range(0, len(code_block)):
+                                evaluate_ast(code_block[i], symbols) # evaluate MEBBE block
+                        
 
     # elif instruction == "FUNC_DECLARATION":
     #     pass
-
-
 
     elif instruction == "LOOP":
         label = children[0][1]
@@ -351,15 +382,18 @@ def evaluate_ast(node, symbols):
             print(f"Variable identifier {children[0]} has not yet been declared")
     
     elif instruction in ("ARITH_OPERATION", "BOOL_OPERATION"):
-        result = eval_expr(children[0], symbols)
-        symbols["IT"] = result
-        update_symboltable(symbols)
+        # result = eval_expr(children[0], symbols)
+        # symbols["IT"] = result
+        # update_symboltable(symbols)
+        update_it(children[0], symbols)
     
     elif instruction == "PRINT":
         to_print = ""
         for child in children:
             to_print = to_print + str(eval_expr(child, symbols))
         outputText.insert(tk.END, to_print+"\n")
+
+
 
 def execute_code():
     # clear GUI

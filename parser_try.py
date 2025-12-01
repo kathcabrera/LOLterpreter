@@ -133,16 +133,19 @@ class Parser:
                 items.append(node("ARITH_OPERATION", self.eval_expr()))
             elif self.at("BOTH_OF","EITHER_OF","WON_OF", "NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT"):
                 items.append(node("BOOL_OPERATION", self.eval_expr()))
-            elif self.at("IM_IN_YR"):
+
+            elif self.at("IM_IN_YR"):   #LOOP START
                 items.append(self.loop_stmt())
-            elif self.at("HOW_IZ_I"):
+            elif self.at("HOW_IZ_I"):   #FUNC DECLARATION
                 items.append(self.func_stmt())
-            elif self.at("I_IZ"):
+            elif self.at("I_IZ"):       #FUNC_CALL
                 items.append(self.call_stmt())
-            elif self.at("WTF?"):
+            elif self.at("WTF?"):       #SWITCH START
                 items.append(self.switch_stmt())
-            elif self.at("O_RLY?"):
+            elif self.at("O_RLY?"):     #IF-ELSE START
                 items.append(self.if_else_stmt())
+
+            # Possible assignments to IT variable
             elif self.at("IDENT"):
                 if self.peek(1).type == "R":
                     items.append(self.assign_stmt())                
@@ -150,7 +153,6 @@ class Parser:
                     items.append(self.cast_stmt())
                 else:
                     items.append(("IT", self.eval_expr()))
-                    # pass
             elif self.at("TROOF_LIT", "NUMBR_LIT", "NUMBAR_LIT", "YARN_LIT"):
                     items.append(("IT", self.eval_expr()))
 
@@ -211,10 +213,17 @@ class Parser:
                 items.append(node("ARITH_OPERATION", self.eval_expr()))
             elif self.at("BOTH_OF","EITHER_OF","WON_OF", "NOT","ALL_OF","ANY_OF","BOTH_SAEM", "DIFFRINT"):
                 items.append(node("BOOL_OPERATION", self.eval_expr()))
+
             elif self.at("IM_IN_YR"):
                 items.append(self.loop_stmt())
+            elif self.at("WTF?"):       #SWITCH START
+                items.append(self.switch_stmt())
+            elif self.at("O_RLY?"):     #IF-ELSE START
+                items.append(self.if_else_stmt())
             
-            # for functions
+            # for functions            
+            elif self.at("I_IZ"):       #FUNC_CALL
+                items.append(self.call_stmt())
             elif self.at("FOUND_YR"):
                 items.append(self.return_stmt())
             elif self.at("GTFO"):
@@ -223,16 +232,21 @@ class Parser:
             elif self.at("HOW_IZ_I"):
                 items.append(self.call_stmt)
 
-            else:
+            # Possible assignments to IT variable
+            elif self.at("IDENT"):
                 if self.peek(1).type == "R":
-                    items.append(self.assign_stmt())
-                
+                    items.append(self.assign_stmt())                
                 elif self.peek(1).type in ("IS_NOW_A", "MAEK_A"):
                     items.append(self.cast_stmt())
                 else:
                     items.append(("IT", self.eval_expr()))
+            elif self.at("TROOF_LIT", "NUMBR_LIT", "NUMBAR_LIT", "YARN_LIT"):
+                    items.append(("IT", self.eval_expr()))
+
+            else:
+                # elif self.peek(1).type in ("WTF?"):
                 # else:
-                #     break
+                break
         return items
 
     def get_func_parameters(self, acc: list):
